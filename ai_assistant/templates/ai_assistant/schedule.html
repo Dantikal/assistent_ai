@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Расписание - StudySense{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-calendar-alt me-2"></i>Расписание на неделю
+    </h1>
+    <span class="badge bg-primary">Группа: {{ student.group }}</span>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <strong>Моё расписание (добавляешь сам)</strong>
+    </div>
+    <div class="card-body">
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            <div class="col-md-4">
+                <label class="form-label">Название</label>
+                {{ personal_form.title }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">День</label>
+                {{ personal_form.day_of_week }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Начало</label>
+                {{ personal_form.start_time }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Конец</label>
+                {{ personal_form.end_time }}
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Место</label>
+                {{ personal_form.room }}
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Заметки</label>
+                {{ personal_form.notes }}
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Добавить
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    {% for d in week_data %}
+        <div class="col-md-12 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if d.day == 1 %}Понедельник{% endif %}
+                        {% if d.day == 2 %}Вторник{% endif %}
+                        {% if d.day == 3 %}Среда{% endif %}
+                        {% if d.day == 4 %}Четверг{% endif %}
+                        {% if d.day == 5 %}Пятница{% endif %}
+                        {% if d.day == 6 %}Суббота{% endif %}
+                        {% if d.day == 7 %}Воскресенье{% endif %}
+                        <span class="badge bg-secondary ms-2">{{ d.group_schedules|length }} пар</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if d.personal_schedules %}
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="text-muted small">Моё расписание</div>
+                                <span class="badge bg-success">{{ d.personal_schedules|length }}</span>
+                            </div>
+                            {% for row in d.personal_schedules %}
+                                <div class="schedule-card card mb-2 border-success">
+                                    <div class="card-body">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-3">
+                                                <h6 class="text-success mb-1">
+                                                    <i class="fas fa-clock me-1"></i>{{ row.obj.start_time }} - {{ row.obj.end_time }}
+                                                </h6>
+                                                {% if row.obj.room %}
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="fas fa-map-marker-alt me-1"></i>{{ row.obj.room }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h5 class="card-title mb-1">{{ row.obj.title }}</h5>
+                                                {% if row.obj.notes %}
+                                                    <p class="card-text text-muted mb-2">{{ row.obj.notes }}</p>
+                                                {% endif %}
+
+                                                {% if row.notes %}
+                                                    <div class="mt-2">
+                                                        {% for n in row.notes %}
+                                                            <div class="small border rounded p-2 mb-2">
+                                                                <div class="d-flex justify-content-between">
+                                                                    <strong>{{ n.title }}</strong>
+                                                                    <form method="post" style="display:inline;">
+                                                                        {% csrf_token %}
+                                                                        <input type="hidden" name="action" value="delete_note">
+                                                                        <input type="hidden" name="note_id" value="{{ n.id }}">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                                                    </form>
+                                                                </div>
+                                                                {% if n.description %}
+                                                                    <div class="text-muted">{{ n.description }}</div>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-3 text-end">
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-success mb-2"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#noteModal"
+                                                        data-schedule-type="personal"
+                                                        data-schedule-id="{{ row.obj.id }}"
+                                                        data-schedule-label="{{ row.obj.title }} ({{ row.obj.start_time }}-{{ row.obj.end_time }})">
+                                                    <i class="fas fa-plus me-1"></i>Задание
+                                                </button>
+                                                <form method="post" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="delete_personal">
+                                                    <input type="hidden" name="item_id" value="{{ row.obj.id }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash me-1"></i>Удалить
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% if d.group_schedules %}
+                        {% for row in d.group_schedules %}
+                            <div class="schedule-card card mb-2">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-3">
+                                            <h6 class="text-primary mb-1">
+                                                <i class="fas fa-clock me-1"></i>{{ row.obj.start_time }} - {{ row.obj.end_time }}
+                                            </h6>
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-door-open me-1"></i>{{ row.obj.room }}
+                                            </span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5 class="card-title mb-1">{{ row.obj.subject.name }}</h5>
+                                            <p class="card-text text-muted mb-0">
+                                                <i class="fas fa-user-tie me-1"></i>{{ row.obj.subject.teacher.get_full_name }}
+                                            </p>
+
+                                            {% if row.notes %}
+                                                <div class="mt-2">
+                                                    {% for n in row.notes %}
+                                                        <div class="small border rounded p-2 mb-2">
+                                                            <div class="d-flex justify-content-between">
+                                                                <strong>{{ n.title }}</strong>
+                                                                <form method="post" style="display:inline;">
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="action" value="delete_note">
+                                                                    <input type="hidden" name="note_id" value="{{ n.id }}">
+                                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                                                </form>
+                                                            </div>
+                                                            {% if n.description %}
+                                                                <div class="text-muted">{{ n.description }}</div>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary mb-2"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#noteModal"
+                                                    data-schedule-type="group"
+                                                    data-schedule-id="{{ row.obj.id }}"
+                                                    data-schedule-label="{{ row.obj.subject.name }} ({{ row.obj.start_time }}-{{ row.obj.end_time }})">
+                                                <i class="fas fa-plus me-1"></i>Задание
+                                            </button>
+                                            <div>
+                                                <span class="badge bg-success">Активно</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">В этот день пар нет</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="noteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_note">
+                <input type="hidden" name="schedule_type" id="noteScheduleType">
+                <input type="hidden" name="schedule_id" id="noteScheduleId">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить задание</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-muted small mb-2" id="noteScheduleLabel"></div>
+                    <div class="mb-3">
+                        <label class="form-label">Заголовок</label>
+                        {{ note_form.title }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        {{ note_form.description }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var noteModal = document.getElementById('noteModal');
+    if (!noteModal) return;
+
+    noteModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        if (!button) return;
+
+        var scheduleType = button.getAttribute('data-schedule-type');
+        var scheduleId = button.getAttribute('data-schedule-id');
+        var label = button.getAttribute('data-schedule-label');
+
+        document.getElementById('noteScheduleType').value = scheduleType || '';
+        document.getElementById('noteScheduleId').value = scheduleId || '';
+        document.getElementById('noteScheduleLabel').textContent = label || '';
+    });
+});
+</script>
+
+<div class="text-center mt-4">
+    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+        <i class="fas fa-arrow-left me-2"></i>Вернуться на главную
+    </a>
+</div>
+{% endblock %}

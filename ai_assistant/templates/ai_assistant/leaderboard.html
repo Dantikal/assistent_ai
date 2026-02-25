@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+
+{% block title %}Список лидеров - StudySense{% endblock %}
+
+{% block extra_css %}
+<style>
+    .leaderboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .rank-medal {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 20px;
+        color: white;
+        margin-right: 10px;
+    }
+
+    .rank-1 {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+    }
+
+    .rank-2 {
+        background: linear-gradient(135deg, #C0C0C0 0%, #A9A9A9 100%);
+        box-shadow: 0 5px 15px rgba(192, 192, 192, 0.4);
+    }
+
+    .rank-3 {
+        background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+        box-shadow: 0 5px 15px rgba(205, 127, 50, 0.4);
+    }
+
+    .rank-other {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .leaderboard-item {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .leaderboard-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .leaderboard-item.top-1 {
+        border-left-color: #FFD700;
+        background: linear-gradient(90deg, rgba(255, 215, 0, 0.05) 0%, white 100%);
+    }
+
+    .leaderboard-item.top-2 {
+        border-left-color: #C0C0C0;
+        background: linear-gradient(90deg, rgba(192, 192, 192, 0.05) 0%, white 100%);
+    }
+
+    .leaderboard-item.top-3 {
+        border-left-color: #CD7F32;
+        background: linear-gradient(90deg, rgba(205, 127, 50, 0.05) 0%, white 100%);
+    }
+
+    .leaderboard-item.current-user {
+        border: 2px solid #667eea;
+        border-left: 4px solid #667eea;
+        background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, white 100%);
+    }
+
+    .leader-position {
+        display: flex;
+        align-items: center;
+        flex: 0 0 auto;
+    }
+
+    .leader-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        margin: 0 20px;
+    }
+
+    .leader-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 3px solid #e0e0e0;
+    }
+
+    .leader-details {
+        flex: 1;
+    }
+
+    .leader-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .leader-rank {
+        font-size: 12px;
+        color: #999;
+    }
+
+    .leader-stats {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex: 0 0 auto;
+    }
+
+    .stat-box {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        color: #999;
+        text-transform: uppercase;
+        margin-top: 3px;
+    }
+
+    .filter-container {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .user-position-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .position-value {
+        font-size: 36px;
+        font-weight: bold;
+        margin-right: 15px;
+    }
+
+    .position-text {
+        font-size: 14px;
+    }
+
+    .position-text strong {
+        font-size: 18px;
+        display: block;
+    }
+
+    .medal-emoji {
+        font-size: 28px;
+    }
+
+    .leaderboard-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+        gap: 10px;
+    }
+
+    .leaderboard-header h1 {
+        margin-bottom: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        border: 2px solid #ddd;
+        border-radius: 20px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .filter-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+
+    .filter-btn:hover {
+        border-color: #667eea;
+    }
+
+    @media (max-width: 768px) {
+        .leaderboard-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .leader-position {
+            width: 100%;
+        }
+
+        .leader-stats {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .leader-info {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <!-- Заголовок -->
+    <div class="leaderboard-header">
+        <i class="fas fa-trophy" style="font-size: 32px; color: #FFD700;"></i>
+        <h1>🏆 Список лидеров</h1>
+    </div>
+
+    <!-- Фильтр по предметам -->
+    <div class="filter-container">
+        <h5 class="mb-3">Выберите предмет:</h5>
+        <div class="filter-tabs">
+            <a href="?subject=all" class="filter-btn {% if current_subject == 'all' %}active{% endif %}">
+                <i class="fas fa-star me-2"></i>Общий рейтинг
+            </a>
+            {% for subject in subjects %}
+                <a href="?subject={{ subject.id }}" class="filter-btn {% if current_subject|stringformat:'s' == subject.id|stringformat:'s' %}active{% endif %}">
+                    {{ subject.name }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Позиция текущего пользователя -->
+    {% if user_position %}
+        <div class="user-position-card">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <div class="position-value">
+                        {% if user_position == 1 %}🥇{% elif user_position == 2 %}🥈{% elif user_position == 3 %}🥉{% else %}#{% endif %}
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="position-text">
+                            Ваша позиция: <strong>{{ user_position }} место</strong>
+                        </div>
+                        <div style="font-size: 12px; margin-top: 5px;">
+                            Очков: <strong>{{ user_points }}</strong>
+                        </div>
+                    </div>
+                </div>
+                {% if user_position <= 10 %}
+                    <div style="font-size: 24px;">🎉</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Список лидеров -->
+    <div>
+        {% for leader in leaders %}
+            <div class="leaderboard-item {% if leader.place == 1 %}top-1{% elif leader.place == 2 %}top-2{% elif leader.place == 3 %}top-3{% endif %}">
+                <!-- Позиция и медаль -->
+                <div class="leader-position">
+                    {% if leader.place == 1 %}
+                        <div class="rank-medal rank-1">🥇</div>
+                    {% elif leader.place == 2 %}
+                        <div class="rank-medal rank-2">🥈</div>
+                    {% elif leader.place == 3 %}
+                        <div class="rank-medal rank-3">🥉</div>
+                    {% else %}
+                        <div class="rank-medal rank-other">#{{ leader.place }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Информация о лидере -->
+                <div class="leader-info">
+                    {% if leader.profile.avatar %}
+                        <img src="{{ leader.profile.avatar.url }}" alt="avatar" class="leader-avatar">
+                    {% else %}
+                        <div class="leader-avatar" style="background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user" style="font-size: 24px; color: #ccc;"></i>
+                        </div>
+                    {% endif %}
+                    <div class="leader-details">
+                        <div class="leader-name">
+                            {{ leader.profile.user.username }}
+                            {% if leader.rank %}
+                                <span style="margin-left: 10px; font-size: 14px;">{{ leader.rank.emoji }} {{ leader.rank.name }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="leader-rank">
+                            {{ leader.rank_name }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Статистика -->
+                <div class="leader-stats">
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #FFD700;">⭐ {{ leader.points }}</div>
+                        <div class="stat-label">Очки</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #4CAF50;">✅ {{ leader.profile.correct_answers }}</div>
+                        <div class="stat-label">Правильных</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #f44336;">❌ {{ leader.profile.wrong_answers }}</div>
+                        <div class="stat-label">Неправильных</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" style="color: #2196F3;">🎯 {{ leader.accuracy }}%</div>
+                        <div class="stat-label">Точность</div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div style="text-align: center; padding: 40px 20px;">
+                <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; margin-bottom: 20px; display: block;"></i>
+                <h4 class="text-muted">Лидеры не найдены</h4>
+                <p class="text-muted">Пока нет данных для отображения. Начните учиться и собирайте очки!</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Информация о системе рангов -->
+    {% if current_subject == 'all' %}
+        <div style="margin-top: 50px; padding: 30px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px;">
+            <h5 style="margin-bottom: 20px; color: #667eea;">
+                <i class="fas fa-info-circle me-2"></i>О системе рангов
+            </h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                <div>
+                    <strong>🥉 IRON:</strong> 0-500 очков
+                </div>
+                <div>
+                    <strong>🥈 BRONZE:</strong> 500-2K очков
+                </div>
+                <div>
+                    <strong>🥉 SILVER:</strong> 2K-5K очков
+                </div>
+                <div>
+                    <strong>🥈 GOLD:</strong> 5K-10K очков
+                </div>
+                <div>
+                    <strong>🥇 PLATINUM:</strong> 10K-25K очков
+                </div>
+                <div>
+                    <strong>🥇 DIAMOND:</strong> 25K-50K очков
+                </div>
+                <div>
+                    <strong>👑 MASTER:</strong> 50K-100K очков
+                </div>
+                <div>
+                    <strong>👑 GRANDMASTER:</strong> 100K+ очков
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

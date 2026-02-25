@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ card.title }} - StudySense{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>{{ card.title }}</h1>
+        <p class="text-muted mb-0">
+            <span class="badge bg-primary me-2">{{ card.subject.name }}</span>
+            <span class="badge bg-{{ card.difficulty_level|yesno:'success,warning,danger' }}">
+                {% if card.difficulty_level == 1 %}Начальный{% endif %}
+                {% if card.difficulty_level == 2 %}Средний{% endif %}
+                {% if card.difficulty_level == 3 %}Продвинутый{% endif %}
+            </span>
+        </p>
+    </div>
+    <div>
+        <span class="badge bg-{{ progress.mastery_level|yesno:'secondary,success,info,primary' }}">
+            {{ progress.get_mastery_level_display }}
+        </span>
+        <br>
+        <small class="text-muted">Просмотров: {{ progress.access_count }}</small>
+    </div>
+</div>
+
+<!-- Основное определение -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-lightbulb me-2"></i>Основное определение
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="card-text">{{ card.main_definition }}</p>
+    </div>
+</div>
+
+<!-- Простое объяснение -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-comments me-2"></i>Простое объяснение
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="card-text">{{ card.simple_explanation }}</p>
+    </div>
+</div>
+
+<!-- Примеры -->
+{% if card.examples %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list-ul me-2"></i>Примеры
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="card-text">{{ card.examples|linebreaks }}</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Аналогии -->
+{% if card.analogies %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-exchange-alt me-2"></i>Аналогии
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="card-text">{{ card.analogies|linebreaks }}</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Ключевые концепции -->
+{% if card.key_concepts %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-key me-2"></i>Ключевые концепции
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="card-text">{{ card.key_concepts|linebreaks }}</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Частые ошибки -->
+{% if card.common_mistakes %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>Частые ошибки
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="card-text">{{ card.common_mistakes|linebreaks }}</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Кнопки действий -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <form method="post" action="{% url 'update_progress' card.id %}">
+            {% csrf_token %}
+            <div class="btn-group w-100" role="group">
+                <button type="submit" name="mastery_level" value="1" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Не изучено
+                </button>
+                <button type="submit" name="mastery_level" value="2" class="btn btn-outline-warning">
+                    <i class="fas fa-spinner me-1"></i>В процессе
+                </button>
+                <button type="submit" name="mastery_level" value="3" class="btn btn-outline-info">
+                    <i class="fas fa-check me-1"></i>Изучено
+                </button>
+                <button type="submit" name="mastery_level" value="4" class="btn btn-outline-success">
+                    <i class="fas fa-star me-1"></i>Освоено
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-6">
+        <a href="{% url 'ai_chat' %}" class="btn btn-primary w-100">
+            <i class="fas fa-robot me-2"></i>Задать вопрос AI
+        </a>
+    </div>
+</div>
+
+<div class="text-center mt-4">
+    <a href="{% url 'knowledge_cards' %}" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left me-2"></i>Вернуться к карточкам
+    </a>
+</div>
+{% endblock %}

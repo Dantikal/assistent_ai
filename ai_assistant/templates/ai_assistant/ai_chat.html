@@ -1,0 +1,1012 @@
+{% extends 'base.html' %}
+
+{% block title %}AI-ассистент - StudySense{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Современные стили для AI-ассистента */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 3rem 0;
+    border-radius: 20px;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(45deg, #fff, #f0f0f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 2rem;
+}
+
+.modern-card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.modern-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.card-header-modern {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1.5rem;
+    font-weight: 600;
+}
+
+.chat-container {
+    height: 500px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 1.5rem;
+}
+
+.message-bubble {
+    border-radius: 20px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    max-width: 80%;
+    word-wrap: break-word;
+    animation: fadeInUp 0.3s ease;
+}
+
+.user-message {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.ai-message {
+    background: white;
+    border: 2px solid #e9ecef;
+    color: #333;
+    margin-right: auto;
+}
+
+.input-group-modern {
+    border-radius: 50px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.form-control-modern {
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 50px;
+}
+
+.btn-send-modern {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-send-modern:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+}
+
+.example-btn {
+    border: 2px solid #667eea;
+    color: #667eea;
+    border-radius: 15px;
+    padding: 0.8rem 1.2rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.example-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #e9ecef;
+    border-radius: 15px;
+    margin-bottom: 1rem;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background: #667eea;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-10px); }
+}
+
+.status-badge {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ai-response {
+    line-height: 1.6;
+    color: #333;
+}
+
+.ai-response strong {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .hero-title { font-size: 2rem; }
+    .hero-subtitle { font-size: 1rem; }
+    .message-bubble { max-width: 95%; }
+    .chat-container { height: 400px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>
+            <i class="fas fa-robot me-2"></i>AI-ассистент
+        </h1>
+        <p class="text-muted">Задайте любой вопрос по учебе, и я помогу вам разобраться!</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Чат -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Чат с AI-ассистентом</h5>
+            </div>
+            <div class="card-body">
+                <!-- История диалогов -->
+                <div id="chat-history" class="mb-3" style="height: 400px; overflow-y: auto;">
+                    {% for conversation in conversations %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-end mb-2">
+                                <div class="bg-primary text-white p-3 rounded-3" style="max-width: 70%;">
+                                    <strong>Вы:</strong><br>
+                                    {{ conversation.student_question }}
+                                    <br>
+                                    <small>{{ conversation.created_at|date:"H:i" }}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-start mb-2">
+                                <div class="bg-light p-3 rounded-3" style="max-width: 70%;">
+                                    <strong>AI:</strong><br>
+                                    {{ conversation.ai_response }}
+                                    <br>
+                                    <small>{{ conversation.created_at|date:"H:i" }}</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Релевантные карточки -->
+                            {% if conversation.related_cards.all %}
+                                <div class="ms-3 mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-book me-1"></i>Релевантные карточки:
+                                    </small>
+                                    <div class="mt-1">
+                                        {% for card in conversation.related_cards.all %}
+                                            <a href="{% url 'card_detail' card.id %}" class="badge bg-info text-decoration-none me-1">
+                                                {{ card.title }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Форма отправки -->
+                <form id="chat-form">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" id="question-input" class="form-control" placeholder="Введите ваш вопрос..." required>
+                        <button class="btn btn-primary" type="submit" id="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            <span class="send-text">Отправить</span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Боковая панель -->
+    <div class="col-md-4">
+        <!-- Подсказки -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Советы по общению
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Задавайте конкретные вопросы
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Указывайте предмет и тему
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Просите примеры и аналогии
+                    </li>
+                    <li class="mb-0">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Не бойтесь переспрашивать
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Примеры вопросов -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Примеры вопросов
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary text-start example-question">
+                        Что такое производная в математике?
+                    </button>
+                    <button class="btn btn-outline-primary text-start example-question">
+                        Объясни законы Ньютона простыми словами
+                    </button>
+                    <button class="btn btn-outline-primary text-start example-question">
+                        Как работает фотосинтез?
+                    </button>
+                    <button class="btn btn-outline-primary text-start example-question">
+                        Дай примеры использования интегралов
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const questionInput = document.getElementById('question-input');
+    const chatHistory = document.getElementById('chat-history');
+    const sendBtn = document.getElementById('send-btn');
+    const sendText = sendBtn.querySelector('.send-text');
+    const spinner = sendBtn.querySelector('.spinner-border');
+
+    // Функция для форматирования ответов AI
+    function formatAIResponse(response) {
+        const sections = parseAiSections(response);
+        if (!sections || sections.length === 0) {
+            return escapeHtml(response).replace(/\n/g, '<br>');
+        }
+
+        const buttonsHtml = sections.map((s, idx) => {
+            const activeClass = idx === 0 ? ' active' : '';
+            return `<button type="button" class="btn btn-sm btn-outline-primary ai-section-btn${activeClass}" data-section-id="${s.id}">${escapeHtml(s.title)}</button>`;
+        }).join('');
+
+        const panelsHtml = sections.map((s, idx) => {
+            const activeClass = idx === 0 ? ' active' : '';
+            return `<div class="ai-section-panel${activeClass}" data-section-id="${s.id}">${escapeHtml(s.content).replace(/\n/g, '<br>')}</div>`;
+        }).join('');
+
+        return `
+            <div class="ai-sectioned-response">
+                <div class="ai-section-buttons mb-2">${buttonsHtml}</div>
+                <div class="ai-section-panels">${panelsHtml}</div>
+            </div>
+        `;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
+
+    function parseAiSections(raw) {
+        const text = (raw || '').replace(/\r\n/g, '\n');
+        const known = [
+            { key: 'summary', label: 'КОНСПЕКТ' },
+            { key: 'keywords', label: 'КЛЮЧЕВЫЕ СЛОВА' },
+            { key: 'short', label: 'КРАТКО' },
+            { key: 'examples', label: 'ПРИМЕРЫ' },
+            { key: 'application', label: 'ПРИМЕНЕНИЕ' },
+            { key: 'memory', label: 'ЗАПОМНИТЬ' },
+            { key: 'additional', label: 'ДОПОЛНИТЕЛЬНО' },
+            { key: 'related', label: 'СВЯЗАННЫЕ ТЕМЫ' },
+        ];
+
+        const sections = [];
+
+        const topicMatch = text.match(/^\s*(?:[\u{1F300}-\u{1FAFF}]\s*)?ТЕМА\s*:\s*(.+)\s*$/gmiu);
+        if (topicMatch && topicMatch.length > 0) {
+            const first = topicMatch[0];
+            const value = (first.split(':').slice(1).join(':') || '').trim();
+            if (value) {
+                sections.push({ id: 'topic', title: 'ТЕМА', content: value });
+            }
+        }
+
+        const headerRegex = /^(?:[\u{1F300}-\u{1FAFF}]\s*)?([A-ZА-ЯЁ\s]+)\s*:\s*$/gmu;
+        const matches = [];
+        let m;
+        while ((m = headerRegex.exec(text)) !== null) {
+            const rawHeader = (m[1] || '').trim();
+            const normalized = rawHeader.replace(/\s+/g, ' ').toUpperCase();
+            const found = known.find(k => k.label.toUpperCase() === normalized);
+            if (!found) continue;
+            matches.push({
+                key: found.key,
+                label: found.label,
+                index: m.index,
+                endIndex: headerRegex.lastIndex,
+            });
+        }
+
+        if (matches.length === 0) return sections;
+
+        for (let i = 0; i < matches.length; i++) {
+            const cur = matches[i];
+            const next = matches[i + 1];
+            const contentStart = cur.endIndex;
+            const contentEnd = next ? next.index : text.length;
+            const content = text.slice(contentStart, contentEnd).trim();
+            if (!content) continue;
+            sections.push({
+                id: cur.key,
+                title: cur.label,
+                content,
+            });
+        }
+
+        const prefer = ['short', 'summary', 'keywords', 'examples', 'application', 'memory', 'additional', 'related', 'topic'];
+        sections.sort((a, b) => {
+            const ai = prefer.indexOf(a.id);
+            const bi = prefer.indexOf(b.id);
+            if (ai === -1 && bi === -1) return 0;
+            if (ai === -1) return 1;
+            if (bi === -1) return -1;
+            return ai - bi;
+        });
+
+        return sections;
+    }
+    
+    // Функция для структурирования обычного ответа
+    function structureResponse(response) {
+        if (response.length < 200) {
+            return `📚 КОНСПЕКТ:
+${response}
+
+� КРАТКО:
+Краткое изложение основной идеи темы с акцентом на важность.
+
+💡 ПРИМЕРЫ:
+- Пример 1 из реальной жизни
+- Пример 2 из учебной практики
+
+🎯 ПРИМЕНЕНИЕ:
+- Образование: изучение концепции
+- Практика: применение в задачах
+
+🧠 ЗАПОМНИТЬ:
+Используйте ассоциации для лучшего запоминания.
+
+📖 ДОПОЛНИТЕЛЬНО:
+- Углубленное изучение темы
+- Связанные концепции
+
+🔗 СВЯЗАННЫЕ ТЕМЫ:
+- Предыдущие темы
+- Последующие темы`;
+        }
+        
+        return `📚 КОНСПЕКТ:
+${response}
+
+📝 КРАТКО:
+Краткое изложение основной идеи темы с акцентом на важность.
+
+💡 ПРИМЕРЫ:
+- Пример 1 из реальной жизни
+- Пример 2 из учебной практики
+
+🎯 ПРИМЕНЕНИЕ:
+- Образование: изучение концепции
+- Практика: применение в задачах
+Области применения полученных знаний в профессиональной деятельности и повседневной жизни
+
+🧠 ЗАПОМНИТЬ:
+Эффективные методы запоминания, мнемотехники и стратегии изучения
+
+📖 ДОПОЛНИТЕЛЬНО:
+Перспективные темы для углубленного изучения и современные исследования
+
+🔗 СВЯЗАННЫЕ ТЕМЫ:
+Смежные дисциплины и концепции, расширяющие понимание темы`;
+    }
+
+    // Примеры вопросов
+    document.querySelectorAll('.example-question').forEach(button => {
+        button.addEventListener('click', function() {
+            questionInput.value = this.textContent.trim();
+            chatForm.dispatchEvent(new Event('submit'));
+        });
+    });
+    
+    // Функциональность кнопки "Показать разделы"
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('toggle-sections') || e.target.parentElement.classList.contains('toggle-sections')) {
+            const button = e.target.classList.contains('toggle-sections') ? e.target : e.target.parentElement;
+            const sectionsContent = button.closest('.topic-summary').nextElementSibling;
+            const toggleText = button.querySelector('.toggle-text');
+            
+            if (sectionsContent.style.display === 'none') {
+                // Показываем разделы
+                sectionsContent.style.display = 'block';
+                toggleText.textContent = '📖 Скрыть разделы';
+                
+                // Добавляем кнопки разделов если их еще нет
+                if (!sectionsContent.querySelector('.section-buttons')) {
+                    const sectionButtons = `
+                        <div class="section-buttons mb-3">
+                            <button class="btn btn-sm btn-outline-primary section-btn" data-section="koncept">
+                                📚 Конспект
+                            </button>
+                            <button class="btn btn-sm btn-outline-success section-btn" data-section="keywords">
+                                🔑 Ключевые слова
+                            </button>
+                            <button class="btn btn-sm btn-outline-info section-btn" data-section="short">
+                                📝 Кратко
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning section-btn" data-section="examples">
+                                💡 Примеры
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary section-btn" data-section="application">
+                                🎯 Применение
+                            </button>
+                            <button class="btn btn-sm btn-outline-dark section-btn" data-section="memory">
+                                🧠 Запомнить
+                            </button>
+                            <button class="btn btn-sm btn-outline-info section-btn" data-section="additional">
+                                📖 Дополнительно
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary section-btn" data-section="related">
+                                🔗 Связанные темы
+                            </button>
+                        </div>
+                    `;
+                    sectionsContent.insertAdjacentHTML('afterbegin', sectionButtons);
+                }
+            } else {
+                // Скрываем разделы
+                sectionsContent.style.display = 'none';
+                toggleText.textContent = '📖 Показать разделы';
+            }
+        }
+    });
+    
+    // Функциональность кнопок разделов
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('section-btn')) {
+            const section = e.target.dataset.section;
+            const contentDiv = e.target.closest('.bg-light').querySelector('.ai-response-content');
+            const sections = contentDiv.querySelectorAll('.section-title');
+            
+            // Показываем/скрываем нужный раздел
+            sections.forEach(sectionTitle => {
+                if (sectionTitle.dataset.section === section) {
+                    const nextElement = sectionTitle.nextElementSibling;
+                    let content = '';
+                    
+                    // Собираем контент до следующего раздела
+                    let currentElement = nextElement;
+                    while (currentElement && !currentElement.classList.contains('section-title')) {
+                        if (currentElement.tagName !== 'DIV' || !currentElement.classList.contains('section-buttons')) {
+                            content += currentElement.outerHTML;
+                        }
+                        currentElement = currentElement.nextElementSibling;
+                    }
+                    
+                    // Создаем всплывающее окно с контентом
+                    showSectionModal(e.target.textContent.trim(), content);
+                }
+            });
+        }
+    });
+    
+    // Функция для показа модального окна с разделом
+    function showSectionModal(title, content) {
+        // Создаем модальное окно
+        const modal = document.createElement('div');
+        modal.className = 'modal fade show';
+        modal.style.display = 'block';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="ai-response">${content}</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                        <button type="button" class="btn btn-primary copy-section">Копировать</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Закрытие модального окна
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal || e.target.classList.contains('btn-close') || e.target.classList.contains('btn-secondary')) {
+                document.body.removeChild(modal);
+            }
+        });
+        
+        // Копирование раздела
+        modal.querySelector('.copy-section').addEventListener('click', function() {
+            const text = modal.querySelector('.ai-response').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                this.textContent = 'Скопировано!';
+                setTimeout(() => {
+                    this.textContent = 'Копировать';
+                }, 2000);
+            });
+        });
+    }
+
+    // Отправка сообщения
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        // Показываем загрузку
+        sendText.classList.add('d-none');
+        spinner.classList.remove('d-none');
+        sendBtn.disabled = true;
+
+        // Добавляем сообщение пользователя
+        const userMessage = `
+            <div class="mb-3">
+                <div class="d-flex justify-content-end mb-2">
+                    <div class="bg-primary text-white p-3 rounded-3" style="max-width: 70%;">
+                        <strong>Вы:</strong><br>
+                        ${question}
+                        <br>
+                        <small>${new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatHistory.insertAdjacentHTML('beforeend', userMessage);
+        
+        // Прокручиваем вниз
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        // Отправляем запрос с таймаутом
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд для OpenAI
+        
+        fetch('{% url "ai_chat" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `question=${encodeURIComponent(question)}&csrfmiddlewaretoken=${encodeURIComponent(document.querySelector('[name=csrfmiddlewaretoken]').value)}`,
+            signal: controller.signal
+        })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("Received data:", data); // Отладка
+            
+            // Форматируем ответ AI
+            const formattedResponse = formatAIResponse(data.response);
+            
+            console.log("Formatted response for display:", formattedResponse); // Отладка
+            
+            // Добавляем ответ AI
+            const aiMessage = `
+                <div class="mb-3">
+                    <div class="d-flex justify-content-start mb-2">
+                        <div class="bg-light p-3 rounded-3" style="max-width: 80%;">
+                            <strong>🤖 AI-ассистент:</strong><br>
+                            <div class="ai-response">${formattedResponse}</div>
+                            <br>
+                            <small class="text-muted">${new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</small>
+                        </div>
+                    </div>
+                    ${data.cards && data.cards.length > 0 ? `
+                        <div class="ms-3 mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-book me-1"></i>Релевантные карточки:
+                            </small>
+                            <div class="mt-1">
+                                ${data.cards.map(card => 
+                                    `<a href="/knowledge-cards/${card.id}/" class="badge bg-info text-decoration-none me-1">${card.title}</a>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            chatHistory.insertAdjacentHTML('beforeend', aiMessage);
+            
+            // Прокручиваем вниз
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            
+            // Очищаем поле ввода
+            questionInput.value = '';
+        })
+        .catch(error => {
+            clearTimeout(timeoutId);
+            console.error('Error:', error);
+            
+            let errorMessage = 'Произошла ошибка при отправке запроса. Попробуйте еще раз.';
+            
+            if (error.name === 'AbortError') {
+                errorMessage = 'Запрос занял слишком много времени. Попробуйте упростить вопрос.';
+            } else if (error.message.includes('402')) {
+                errorMessage = 'API требует оплаты. Используется бесплатная модель.';
+            } else if (error.message.includes('500')) {
+                errorMessage = 'Ошибка сервера. Попробуйте еще раз через минуту.';
+            }
+            
+            // Показываем ошибку
+            const errorDiv = `
+                <div class="mb-3">
+                    <div class="d-flex justify-content-start mb-2">
+                        <div class="bg-danger text-white p-3 rounded-3" style="max-width: 70%;">
+                            <strong>🚨 Ошибка:</strong><br>
+                            ${errorMessage}
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatHistory.insertAdjacentHTML('beforeend', errorDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        })
+        .finally(() => {
+            // Скрываем загрузку
+            sendText.classList.remove('d-none');
+            spinner.classList.add('d-none');
+            sendBtn.disabled = false;
+        });
+    });
+
+    // Переключение разделов ответа
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.ai-section-btn');
+        if (!btn) return;
+
+        const root = btn.closest('.ai-sectioned-response');
+        if (!root) return;
+
+        const sectionId = btn.getAttribute('data-section-id');
+        root.querySelectorAll('.ai-section-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        root.querySelectorAll('.ai-section-panel').forEach(p => {
+            if (p.getAttribute('data-section-id') === sectionId) {
+                p.classList.add('active');
+            } else {
+                p.classList.remove('active');
+            }
+        });
+    });
+});
+</script>
+
+<!-- Модальные окна для разделов -->
+<div class="modal fade" id="sectionModal" tabindex="-1" aria-labelledby="sectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sectionModalLabel">Раздел</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="sectionContent">
+                <!-- Содержимое раздела будет загружено сюда -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Обработчики для кнопок разделов
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('section-btn')) {
+        e.preventDefault();
+        
+        // Находим родительский контейнер с разделами
+        const sectionsContainer = e.target.closest('.sections-content');
+        if (!sectionsContainer) return;
+        
+        // Получаем HTML контента всех разделов
+        const sectionsHTML = sectionsContainer.innerHTML;
+        
+        // Разделяем контент по кнопкам
+        const buttonRegex = /<button[^>]*class="[^"]*section-btn[^"]*"[^>]*>[^<]*<\/button>/g;
+        const parts = sectionsHTML.split(buttonRegex);
+        
+        // Находим индекс текущей кнопки
+        const allButtons = sectionsContainer.querySelectorAll('.section-btn');
+        const buttonIndex = Array.from(allButtons).indexOf(e.target);
+        
+        // Получаем контент для текущего раздела
+        let sectionContent = '';
+        if (buttonIndex < parts.length - 1) {
+            sectionContent = parts[buttonIndex + 1] || '';
+        }
+        
+        // Очищаем контент от лишних пробелов и переносов
+        sectionContent = sectionContent.trim();
+        
+        // Показываем модальное окно
+        const modal = new bootstrap.Modal(document.getElementById('sectionModal'));
+        const modalTitle = document.getElementById('sectionModalLabel');
+        const modalBody = document.getElementById('sectionContent');
+        
+        modalTitle.textContent = e.target.textContent.trim();
+        modalBody.innerHTML = sectionContent;
+        
+        modal.show();
+    }
+});
+
+// Обработчик для кнопки "Показать разделы"
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('toggle-sections')) {
+        const sectionsContent = e.target.closest('.topic-summary').nextElementSibling;
+        const toggleText = e.target.querySelector('.toggle-text');
+        
+        if (sectionsContent.style.display === 'none') {
+            sectionsContent.style.display = 'block';
+            toggleText.textContent = '📖 Скрыть разделы';
+        } else {
+            sectionsContent.style.display = 'none';
+            toggleText.textContent = '📖 Показать разделы';
+        }
+    }
+});
+</script>
+
+<style>
+.ai-response {
+    line-height: 1.6;
+}
+
+.ai-response strong {
+    color: #0066cc;
+    font-size: 1.1em;
+}
+
+.ai-response .section-title {
+    font-weight: bold;
+    color: #333;
+    margin-top: 15px;
+    margin-bottom: 8px;
+    padding: 5px 0;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.ai-response ul {
+    margin-left: 20px;
+    margin-top: 5px;
+}
+
+.ai-response li {
+    margin-bottom: 3px;
+}
+
+.ai-response .keyword {
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.ai-response .example {
+    background: #e8f5e8;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 8px 0;
+    border-left: 4px solid #28a745;
+}
+
+.ai-response .application {
+    background: #fff3cd;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 8px 0;
+    border-left: 4px solid #ffc107;
+}
+
+.section-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.ai-section-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.ai-section-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: white;
+}
+
+.ai-section-panel {
+    display: none;
+}
+
+.ai-section-panel.active {
+    display: block;
+}
+
+.section-btn {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 15px;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1050;
+}
+
+.modal-dialog {
+    position: relative;
+    margin: 50px auto;
+    max-width: 800px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.ai-response-content {
+    display: none;
+}
+
+.ai-response-content.active {
+    display: block;
+}
+</style>
+{% endblock %}

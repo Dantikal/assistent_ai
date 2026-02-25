@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная панель - StudySense{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>Добро пожаловать, {{ student.user.get_full_name }}!</h1>
+        <p class="text-muted">Группа: {{ student.group }}</p>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if student.telegram_chat_id %}
+            <span class="badge bg-success">
+                <i class="fas fa-telegram me-1"></i>Telegram подключен
+            </span>
+        {% else %}
+            <span class="badge bg-warning">
+                <i class="fas fa-telegram me-1"></i>Telegram не подключен
+            </span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Расписание на сегодня -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>Расписание на сегодня
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if today_schedules %}
+                    {% for schedule in today_schedules %}
+                        <div class="schedule-card card mb-2 {% if next_class == schedule %}border-primary{% endif %}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-title mb-1">{{ schedule.subject.name }}</h6>
+                                        <p class="card-text text-muted mb-1">
+                                            <i class="fas fa-user-tie me-1"></i>{{ schedule.subject.teacher.get_full_name }}
+                                        </p>
+                                        <p class="card-text text-muted mb-0">
+                                            <i class="fas fa-clock me-1"></i>{{ schedule.start_time }} - {{ schedule.end_time }}
+                                            <i class="fas fa-door-open ms-2 me-1"></i>{{ schedule.room }}
+                                        </p>
+                                    </div>
+                                    {% if next_class == schedule %}
+                                        <span class="badge bg-primary">Следующая</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">На сегодня пар нет. Отдыхайте! 😊</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Прогресс изучения -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Последние изученные темы
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_progress %}
+                    {% for progress in recent_progress %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">{{ progress.knowledge_card.title }}</h6>
+                                <small class="text-muted">{{ progress.knowledge_card.subject.name }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ progress.mastery_level|yesno:'success,warning,info,primary' }}">
+                                    {{ progress.get_mastery_level_display }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ progress.access_count }} просмотров</small>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">Вы еще не изучали темы. Начните с <a href="{% url 'knowledge_cards' %}">карточек знаний</a>!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрые действия -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Быстрые действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'ai_chat' %}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-robot fa-2x mb-2"></i>
+                            Задать вопрос AI
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'knowledge_cards' %}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-book fa-2x mb-2"></i>
+                            Изучить темы
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'schedule' %}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-calendar fa-2x mb-2"></i>
+                            Полное расписание
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/admin/" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-cog fa-2x mb-2"></i>
+                            Управление
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

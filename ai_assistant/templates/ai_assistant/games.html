@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Игры - StudySense{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1><i class="fas fa-gamepad me-2"></i>Игры</h1>
+        <p class="text-muted">Решай примеры и набирай очки.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <span class="badge bg-primary">Очки: {{ points }}</span>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <strong>Математика</strong>
+                    <div>
+                        <a class="btn btn-sm {% if level == 'easy' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?level=easy">Лёгкий</a>
+                        <a class="btn btn-sm {% if level == 'normal' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?level=normal">Нормальный</a>
+                        <a class="btn btn-sm {% if level == 'hard' %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?level=hard">Сложный</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-2 text-muted small">Решено без повторов (в этом уровне): {{ seen_count }}</div>
+
+                {% if message %}
+                    <div class="alert {% if result %}alert-success{% else %}alert-warning{% endif %}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endif %}
+
+                <div class="p-3 bg-light rounded mb-3" style="font-size: 1.4rem;">
+                    Пример: <strong>{{ expr }}</strong>
+                </div>
+
+                <form method="post" class="row g-2 align-items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="level" value="{{ level }}">
+                    <div class="col-sm-6">
+                        <label class="form-label">Твой ответ</label>
+                        <input name="answer" class="form-control" autocomplete="off" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-success">Проверить</button>
+                        <button type="submit" name="action" value="new" class="btn btn-outline-secondary">Новый пример</button>
+                    </div>
+                </form>
+
+                <hr>
+                <div class="small text-muted">
+                    <div>Очки: +50 за правильный пример</div>
+                    <div>Сложный уровень: +100 за правильный пример</div>
+                    <div>Примеры не повторяются, пока не закончится пул (после этого список сбрасывается).</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
