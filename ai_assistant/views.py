@@ -2,7 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
-from .models import KnowledgeCard, AIConversation, StudyProgress
+from django.db import models
+from .models import KnowledgeCard, AIConversation, StudyProgress, SubjectScore, StudentNote
+from .forms import QuickNoteForm
 from .auth_views import register
 from schedule.models import ClassSchedule, Subject, Student, StudentGroup
 from datetime import date, timedelta
@@ -10,6 +12,31 @@ import random
 import ast
 import operator
 import re
+
+
+def update_subject_score(user_profile, subject_name, points_change, correct_change=0, wrong_change=0):
+    """Обновляет статистику по предмету"""
+    try:
+        subject = Subject.objects.get(name=subject_name)
+        subject_score, created = SubjectScore.objects.get_or_create(
+            user_profile=user_profile,
+            subject=subject,
+            defaults={
+                'points': 0,
+                'correct_answers': 0,
+                'wrong_answers': 0
+            }
+        )
+        
+        # Обновляем очки и статистику
+        subject_score.points = max(0, subject_score.points + points_change)
+        subject_score.correct_answers = max(0, subject_score.correct_answers + correct_change)
+        subject_score.wrong_answers = max(0, subject_score.wrong_answers + wrong_change)
+        subject_score.save()
+        
+        return subject_score
+    except Subject.DoesNotExist:
+        return None
 
 
 @login_required
@@ -52,14 +79,86 @@ def dashboard(request):
         user=request.user
     ).order_by('-last_accessed')[:5]
     
+    # Заметки студента
+    notes = StudentNote.objects.filter(user=request.user)
+    pinned_notes = notes.filter(is_pinned=True).order_by('-created_at')[:3]
+    recent_notes = notes.filter(is_pinned=False).order_by('-created_at')[:5]
+    urgent_notes = notes.filter(
+        priority='urgent',
+        is_completed=False
+    ).order_by('-created_at')[:3]
+    
+    # Быстрая форма для заметок
+    quick_note_form = QuickNoteForm()
+    
     context = {
         'student': student,
         'today_schedules': today_schedules,
         'next_class': next_class,
         'recent_progress': recent_progress,
+        'pinned_notes': pinned_notes,
+        'recent_notes': recent_notes,
+        'urgent_notes': urgent_notes,
+        'quick_note_form': quick_note_form,
     }
     
     return render(request, 'ai_assistant/dashboard.html', context)
+
+
+@login_required
+def create_quick_note(request):
+    """Создание быстрой заметки через AJAX"""
+    if request.method == 'POST':
+        form = QuickNoteForm(request.POST)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.user = request.user
+            note.save()
+            return JsonResponse({
+                'success': True,
+                'note_id': note.id,
+                'title': note.title,
+                'content': note.content,
+                'priority': note.priority,
+                'created_at': note.created_at.strftime('%H:%M'),
+                'priority_label': note.get_priority_display()
+            })
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@login_required
+def toggle_note_complete(request, note_id):
+    """Переключение статуса выполнения заметки"""
+    if request.method == 'POST':
+        try:
+            note = StudentNote.objects.get(id=note_id, user=request.user)
+            note.is_completed = not note.is_completed
+            note.save()
+            return JsonResponse({
+                'success': True,
+                'is_completed': note.is_completed
+            })
+        except StudentNote.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Note not found'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@login_required
+def delete_note(request, note_id):
+    """Удаление заметки"""
+    if request.method == 'POST':
+        try:
+            note = StudentNote.objects.get(id=note_id, user=request.user)
+            note.delete()
+            return JsonResponse({'success': True})
+        except StudentNote.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Note not found'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 
 @login_required
@@ -310,12 +409,15 @@ def ai_chat(request):
 @login_required
 def profile(request):
     from .forms import UserProfileForm
-    from .models import UserProfile
+    from .models import UserProfile, SubjectScore
 
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     
     # Вычисляем точность ответов
     accuracy = profile.get_accuracy_percentage()
+    
+    # Получаем очки по предметам
+    subject_scores = SubjectScore.objects.filter(user_profile=profile).select_related('subject')
 
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
@@ -325,6 +427,7 @@ def profile(request):
                 'form': form, 
                 'profile': profile, 
                 'accuracy': accuracy,
+                'subject_scores': subject_scores,
                 'saved': True
             })
     else:
@@ -333,7 +436,8 @@ def profile(request):
     return render(request, 'ai_assistant/profile.html', {
         'form': form, 
         'profile': profile,
-        'accuracy': accuracy
+        'accuracy': accuracy,
+        'subject_scores': subject_scores
     })
 
 
@@ -475,6 +579,10 @@ def games_math(request):
                 profile.points += points_awarded
                 profile.correct_answers += 1
                 profile.save(update_fields=['points', 'correct_answers'])
+                
+                # Обновляем статистику по математике
+                update_subject_score(profile, 'Математика', points_awarded, 1, 0)
+                
                 seen.append(current_expr)
                 request.session[session_key_seen] = seen
                 message = f"Правильно! +{points_awarded} очков"
@@ -492,6 +600,10 @@ def games_math(request):
 
                 profile.points = max(0, profile.points - penalty)
                 profile.save(update_fields=['points', 'wrong_answers'])
+                
+                # Обновляем статистику по математике
+                update_subject_score(profile, 'Математика', -penalty, 0, 1)
+                
                 message = f"Неправильно. -{penalty} очков. Попробуйте ещё раз"
                 result = False
 
@@ -646,6 +758,9 @@ def games_programming(request):
                 profile.correct_answers += 1
                 profile.save(update_fields=['points', 'correct_answers'])
 
+                # Обновляем статистику по программированию
+                update_subject_score(profile, 'Программирование', points_awarded, 1, 0)
+
                 seen.append(current_id)
                 request.session[session_key_seen] = seen
 
@@ -658,6 +773,10 @@ def games_programming(request):
                 profile.wrong_answers += 1
                 profile.points = max(0, profile.points - penalty)
                 profile.save(update_fields=['points', 'wrong_answers'])
+                
+                # Обновляем статистику по программированию
+                update_subject_score(profile, 'Программирование', -penalty, 0, 1)
+                
                 message = f"Неправильно. -{penalty} очков. Попробуйте ещё раз"
                 result = False
 
@@ -821,6 +940,9 @@ def games_physics(request):
                 profile.correct_answers += 1
                 profile.save(update_fields=['points', 'correct_answers'])
 
+                # Обновляем статистику по физике
+                update_subject_score(profile, 'Физика', points_awarded, 1, 0)
+
                 seen.append(current_id)
                 request.session[session_key_seen] = seen
 
@@ -833,6 +955,10 @@ def games_physics(request):
                 profile.wrong_answers += 1
                 profile.points = max(0, profile.points - penalty)
                 profile.save(update_fields=['points', 'wrong_answers'])
+                
+                # Обновляем статистику по физике
+                update_subject_score(profile, 'Физика', -penalty, 0, 1)
+                
                 message = f"Неправильно. -{penalty} очков. Попробуйте ещё раз"
                 result = False
 
@@ -863,6 +989,183 @@ def games_physics(request):
         'seen_count': len(seen),
     }
     return render(request, 'ai_assistant/games_physics.html', context)
+
+
+@login_required
+def games_database(request):
+    from .models import UserProfile
+
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    def _penalty_for_level(level):
+        if level == 'normal':
+            return 70
+        if level == 'hard':
+            return 100
+        return 50
+
+    def _points_for_level(level):
+        return 100 if level == 'hard' else 50
+
+    tasks = {
+        'easy': [
+            {
+                'id': 'e_sql_select_1',
+                'prompt': 'Какой SQL запрос используется для получения всех данных из таблицы users?',
+                'answer': 'SELECT * FROM users',
+            },
+            {
+                'id': 'e_primary_key_1',
+                'prompt': 'Что такое PRIMARY KEY в базе данных? (ответ: уникальный идентификатор/уникальный ключ/первичный ключ)',
+                'answer': 'уникальный идентификатор',
+            },
+            {
+                'id': 'e_foreign_key_1',
+                'prompt': 'Что такое FOREIGN KEY? (ответ: внешний ключ/связь с другой таблицей)',
+                'answer': 'внешний ключ',
+            },
+            {
+                'id': 'e_insert_1',
+                'prompt': 'Какой SQL запрос добавляет новую запись в таблицу users?',
+                'answer': 'INSERT INTO users',
+            },
+        ],
+        'normal': [
+            {
+                'id': 'n_join_1',
+                'prompt': 'Какой тип JOIN возвращает все записи из левой таблицы и совпадающие из правой?',
+                'answer': 'LEFT JOIN',
+            },
+            {
+                'id': 'n_group_by_1',
+                'prompt': 'Что делает GROUP BY в SQL?',
+                'answer': 'группирует строки',
+            },
+            {
+                'id': 'n_where_1',
+                'prompt': 'Где используется WHERE в SQL запросе?',
+                'answer': 'для фильтрации',
+            },
+            {
+                'id': 'n_order_by_1',
+                'prompt': 'Как отсортировать результаты по убыванию в SQL?',
+                'answer': 'ORDER BY DESC',
+            },
+        ],
+        'hard': [
+            {
+                'id': 'h_index_1',
+                'prompt': 'Что такое индекс в базе данных и для чего он нужен?',
+                'answer': 'для ускорения поиска',
+            },
+            {
+                'id': 'h_transaction_1',
+                'prompt': 'Что такое транзакция в базе данных?',
+                'answer': 'набор операций как единое целое',
+            },
+            {
+                'id': 'h_normalization_1',
+                'prompt': 'Что такое нормализация баз данных?',
+                'answer': 'организация данных для избежания избыточности',
+            },
+            {
+                'id': 'h_acid_1',
+                'prompt': 'Что означает ACID в базах данных?',
+                'answer': 'атомарность согласованность изолированность долговечность',
+            },
+        ],
+    }
+
+    level = request.GET.get('level') or request.POST.get('level') or 'easy'
+    if level not in ['easy', 'normal', 'hard']:
+        level = 'easy'
+
+    session_key_seen = f"db_seen_{level}"
+    seen = request.session.get(session_key_seen, [])
+    if not isinstance(seen, list):
+        seen = []
+
+    message = None
+    result = None
+
+    current_id = request.session.get('db_current_id')
+    current_level = request.session.get('db_current_level')
+
+    if current_level and current_level != level:
+        current_id = None
+        current_level = None
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'new' or not current_id or current_level != level:
+            current_id = None
+            current_level = None
+        else:
+            user_answer = (request.POST.get('answer') or '').strip().lower()
+            task_map = {t['id']: t for t in tasks[level]}
+            task = task_map.get(current_id)
+            correct = False
+            if task:
+                expected = (task['answer'] or '').strip().lower()
+                # Проверяем точное совпадение или содержит правильный ответ
+                correct = user_answer == expected or expected in user_answer or user_answer in expected
+
+            if correct:
+                points_awarded = _points_for_level(level)
+                profile.points += points_awarded
+                profile.correct_answers += 1
+                profile.save(update_fields=['points', 'correct_answers'])
+
+                # Обновляем статистику по базам данных
+                update_subject_score(profile, 'Базы данных', points_awarded, 1, 0)
+
+                seen.append(current_id)
+                request.session[session_key_seen] = seen
+
+                message = f"Правильно! +{points_awarded} очков"
+                result = True
+                current_id = None
+                current_level = None
+            else:
+                penalty = _penalty_for_level(level)
+                profile.wrong_answers += 1
+                profile.points = max(0, profile.points - penalty)
+                profile.save(update_fields=['points', 'wrong_answers'])
+                
+                # Обновляем статистику по базам данных
+                update_subject_score(profile, 'Базы данных', -penalty, 0, 1)
+                
+                message = f"Неправильно. -{penalty} очков. Попробуйте ещё раз"
+                result = False
+
+    if not current_id:
+        pool = tasks[level]
+        remaining = [t for t in pool if t['id'] not in seen]
+        if not remaining:
+            seen = []
+            request.session[session_key_seen] = seen
+            remaining = pool
+
+        chosen = random.choice(remaining)
+        current_id = chosen['id']
+        current_level = level
+        request.session['db_current_id'] = current_id
+        request.session['db_current_level'] = current_level
+
+    task_map = {t['id']: t for t in tasks[level]}
+    current_task = task_map.get(current_id)
+    prompt = current_task['prompt'] if current_task else ''
+
+    context = {
+        'level': level,
+        'prompt': prompt,
+        'message': message,
+        'result': result,
+        'points': profile.points,
+        'seen_count': len(seen),
+    }
+    return render(request, 'ai_assistant/games_database.html', context)
 
 
 @login_required
@@ -952,6 +1255,9 @@ def games_english(request):
                 profile.correct_answers += 1
                 profile.save(update_fields=['points', 'correct_answers'])
 
+                # Обновляем статистику по английскому
+                update_subject_score(profile, 'Английский', points_awarded, 1, 0)
+
                 seen.append(current_id)
                 request.session[session_key_seen] = seen
 
@@ -964,6 +1270,10 @@ def games_english(request):
                 profile.wrong_answers += 1
                 profile.points = max(0, profile.points - penalty)
                 profile.save(update_fields=['points', 'wrong_answers'])
+                
+                # Обновляем статистику по английскому
+                update_subject_score(profile, 'Английский', -penalty, 0, 1)
+                
                 message = f"Неправильно. -{penalty} очков. Попробуйте ещё раз"
                 result = False
 
@@ -1039,74 +1349,202 @@ def find_relevant_cards(question):
 
 
 @login_required
-def leaderboard(request):
-    """Список лидеров - обще рейтинги и по предметам"""
-    from .models import UserProfile, SubjectScore
-    from schedule.models import Subject
+def task_tracker(request):
+    """Трекер задач студента"""
+    from .models import TaskTracker, TaskCategory
+    from django.utils import timezone
+    from datetime import datetime
     
-    # Параметры для фильтрации
-    subject_filter = request.GET.get('subject', 'all')
-    
-    # Общий рейтинг (топ 50 студентов)
-    if subject_filter == 'all':
-        leaders = UserProfile.objects.all().order_by('-points')[:50]
-        title = "Общий рейтинг"
-    else:
-        try:
-            subject = Subject.objects.get(id=subject_filter)
-            # Получаем студентов с очками по этому предмету
-            leaders_data = SubjectScore.objects.filter(subject=subject).order_by('-points')[:50]
-            leaders = [score.user_profile for score in leaders_data]
-            title = f"Рейтинг по {subject.name}"
-        except Subject.DoesNotExist:
-            leaders = UserProfile.objects.all().order_by('-points')[:50]
-            title = "Общий рейтинг"
-    
-    # Добавляем ранг и место для каждого студента
-    leaders_with_rank = []
-    for idx, leader in enumerate(leaders, 1):
-        leaders_with_rank.append({
-            'place': idx,
-            'profile': leader,
-            'rank': leader.get_rank(),
-            'rank_name': leader.get_rank_name(),
-            'points': SubjectScore.objects.get(
-                user_profile=leader,
-                subject_id=subject_filter
-            ).points if subject_filter != 'all' and subject_filter != '' else leader.points,
-            'accuracy': leader.get_accuracy_percentage()
-        })
-    
-    # Получаем все предметы для фильтра
-    subjects = Subject.objects.all().order_by('name')
-    
-    # Проверяем текущее место пользователя
-    user_position = None
-    user_points = None
-    
-    try:
-        user_profile = request.user.profile
-        if subject_filter == 'all':
-            user_position = UserProfile.objects.filter(points__gt=user_profile.points).count() + 1
-            user_points = user_profile.points
-        else:
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            # Создание новой задачи
+            category_id = request.POST.get('category')
+            title = request.POST.get('title')
+            description = request.POST.get('description', '')
+            deadline_str = request.POST.get('deadline', '')
+            points = int(request.POST.get('points', 1))
+            
             try:
-                subject_score = SubjectScore.objects.get(
-                    user_profile=user_profile,
-                    subject_id=subject_filter
+                category = TaskCategory.objects.get(id=category_id)
+                deadline = None
+                if deadline_str:
+                    deadline = datetime.strptime(deadline_str, '%Y-%m-%dT%H:%M')
+                
+                task = TaskTracker.objects.create(
+                    user=request.user,
+                    category=category,
+                    title=title,
+                    description=description,
+                    deadline=deadline,
+                    points=points
                 )
-                user_position = SubjectScore.objects.filter(
-                    subject_id=subject_filter,
-                    points__gt=subject_score.points
-                ).count() + 1
-                user_points = subject_score.points
-            except SubjectScore.DoesNotExist:
-                user_position = None
-    except:
-        pass
+                return JsonResponse({'success': True, 'task_id': task.id})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        
+        elif action == 'toggle':
+            # Переключение статуса выполнения
+            task_id = request.POST.get('task_id')
+            try:
+                task = TaskTracker.objects.get(id=task_id, user=request.user)
+                task.is_completed = not task.is_completed
+                task.save()
+                return JsonResponse({
+                    'success': True, 
+                    'is_completed': task.is_completed,
+                    'points': task.points
+                })
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        
+        elif action == 'delete':
+            # Удаление задачи
+            task_id = request.POST.get('task_id')
+            try:
+                task = TaskTracker.objects.get(id=task_id, user=request.user)
+                task.delete()
+                return JsonResponse({'success': True})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+    
+    # GET запрос - отображение трекера
+    categories = TaskCategory.objects.filter(is_active=True)
+    tasks = TaskTracker.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Статистика по категориям
+    category_stats = {}
+    total_tasks = tasks.count()
+    completed_tasks = tasks.filter(is_completed=True).count()
+    
+    for category in categories:
+        cat_tasks = tasks.filter(category=category)
+        cat_total = cat_tasks.count()
+        cat_completed = cat_tasks.filter(is_completed=True).count()
+        
+        if cat_total > 0:
+            category_stats[category.id] = {
+                'category': category,
+                'total': cat_total,
+                'completed': cat_completed,
+                'percentage': int((cat_completed / cat_total) * 100),
+                'points': cat_tasks.filter(is_completed=True).aggregate(
+                    total_points=models.Sum('points'))['total_points'] or 0
+            }
+    
+    # Рассчитываем максимальные значения для графиков
+    max_points = max([stat['points'] for stat in category_stats.values()], default=1)
+    if max_points == 0:
+        max_points = 1
+    
+    # Добавляем процент для баллов
+    for stat_id, stat in category_stats.items():
+        stat['points_percentage'] = int((stat['points'] / max_points) * 100)
     
     context = {
-        'leaders': leaders_with_rank,
+        'categories': categories,
+        'tasks': tasks,
+        'category_stats': category_stats,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'overall_percentage': int((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+    }
+    
+    return render(request, 'ai_assistant/task_tracker.html', context)
+
+
+@login_required
+def leaderboard(request):
+    """Список лидеров с фильтрацией по предметам"""
+    subject_filter = request.GET.get('subject', 'all')
+    
+    # Получаем всех пользователей с их профилями
+    users_with_profiles = UserProfile.objects.select_related('user').all()
+    
+    # Получаем все предметы
+    subjects = Subject.objects.all()
+    
+    # Если выбран конкретный предмет
+    if subject_filter != 'all':
+        try:
+            subject = Subject.objects.get(id=subject_filter)
+            title = f"🏆 Рейтинг по предмету: {subject.name}"
+            
+            # Фильтруем по предмету
+            leaders = []
+            for profile in users_with_profiles:
+                subject_score = profile.subject_scores.filter(subject=subject).first()
+                if subject_score and subject_score.points > 0:
+                    leaders.append({
+                        'profile': profile,
+                        'points': subject_score.points,
+                        'correct_answers': subject_score.correct_answers,
+                        'wrong_answers': subject_score.wrong_answers,
+                        'accuracy': subject_score.get_accuracy_percentage(),
+                        'rank': profile.get_rank()
+                    })
+            
+            # Сортируем по очкам
+            leaders.sort(key=lambda x: x['points'], reverse=True)
+            
+        except Subject.DoesNotExist:
+            leaders = []
+            title = "🏆 Список лидеров"
+    else:
+        # Общий рейтинг - учитываем все очки включая шахматы
+        title = "🏆 Общий рейтинг"
+        
+        leaders = []
+        for profile in users_with_profiles:
+            # Базовые очки профиля
+            total_points = profile.points
+            
+            # Добавляем шахматные очки
+            try:
+                from .models import ChessStats
+                chess_stats = ChessStats.objects.filter(user=profile.user).first()
+                if chess_stats:
+                    total_points += chess_stats.chess_points
+            except:
+                pass
+            
+            if total_points > 0:
+                # Считаем общую статистику ответов
+                total_correct = sum(score.correct_answers for score in profile.subject_scores.all())
+                total_wrong = sum(score.wrong_answers for score in profile.subject_scores.all())
+                total_accuracy = 0
+                if (total_correct + total_wrong) > 0:
+                    total_accuracy = int((total_correct / (total_correct + total_wrong)) * 100)
+                
+                leaders.append({
+                    'profile': profile,
+                    'points': total_points,
+                    'correct_answers': total_correct,
+                    'wrong_answers': total_wrong,
+                    'accuracy': total_accuracy,
+                    'rank': profile.get_rank()
+                })
+        
+        # Сортируем по общим очкам
+        leaders.sort(key=lambda x: x['points'], reverse=True)
+    
+    # Добавляем место в рейтинге
+    for i, leader in enumerate(leaders, 1):
+        leader['place'] = i
+    
+    # Получаем позицию текущего пользователя
+    user_position = None
+    user_points = 0
+    if request.user.is_authenticated:
+        for leader in leaders:
+            if leader['profile'].user == request.user:
+                user_position = leader['place']
+                user_points = leader['points']
+                break
+    
+    context = {
+        'leaders': leaders,
         'subjects': subjects,
         'current_subject': subject_filter,
         'title': title,
@@ -1115,3 +1553,276 @@ def leaderboard(request):
     }
     
     return render(request, 'ai_assistant/leaderboard.html', context)
+
+
+def chess_home(request):
+    """Главная страница шахмат"""
+    from .models import ChessGame, ChessStats
+    
+    # Получаем или создаем статистику пользователя
+    stats, created = ChessStats.objects.get_or_create(user=request.user)
+    
+    # Получаем последние партии
+    recent_games = ChessGame.objects.filter(user=request.user).order_by('-started_at')[:5]
+    
+    context = {
+        'stats': stats,
+        'recent_games': recent_games,
+        'total_games': ChessGame.objects.filter(user=request.user).count(),
+    }
+    
+    return render(request, 'ai_assistant/chess/home.html', context)
+
+
+def chess_new_game(request):
+    """Страница создания новой партии"""
+    if request.method == 'POST':
+        difficulty = request.POST.get('difficulty', 'medium')
+        user_color = request.POST.get('user_color', 'white')
+        
+        # Импортируем модели
+        from .models import ChessGame, ChessStats
+        
+        # Создаем новую партию
+        game = ChessGame.objects.create(
+            user=request.user,
+            bot_difficulty=difficulty,
+            user_color=user_color
+        )
+        
+        # Создаем статистику если нет
+        ChessStats.objects.get_or_create(user=request.user)
+        
+        return redirect('chess_game', game_id=game.id)
+    
+    return render(request, 'ai_assistant/chess/new_game.html')
+
+
+import json
+
+def chess_game(request, game_id):
+    """Страница шахматной партии"""
+    from .models import ChessGame, ChessStats
+    from .chess_engine import ChessBoard, create_bot
+    
+    try:
+        game = ChessGame.objects.get(id=game_id, user=request.user)
+    except ChessGame.DoesNotExist:
+        return redirect('chess_home')
+    
+    # Создаем доску
+    board = ChessBoard(game.fen_position)
+    
+    # Если пользователь играет черными и ход белых, делаем ход бота
+    if game.user_color == 'black' and board.current_turn == 'black' and game.result == 'playing':
+        bot = create_bot(game.bot_difficulty)
+        bot.color = 'white'
+        
+        bot_move = bot.get_move(board)
+        if bot_move:
+            board.make_move(bot_move[0], bot_move[1])
+            game.fen_position = board.to_fen()
+            
+            # Обновляем историю ходов
+            if game.moves_history:
+                game.moves_history += f" {board.fullmove_number}."
+            else:
+                game.moves_history = f"{board.fullmove_number}."
+            
+            # Добавляем ход в историю (упрощенно)
+            from_pos_str = f"{chr(ord('a') + bot_move[0][1])}{8 - bot_move[0][0]}"
+            to_pos_str = f"{chr(ord('a') + bot_move[1][1])}{8 - bot_move[1][0]}"
+            game.moves_history += f" {from_pos_str}{to_pos_str}"
+            
+            game.save()
+    
+    # Конвертируем доску в JSON для JavaScript
+    board_json = json.dumps(board.board)
+    
+    context = {
+        'game': game,
+        'board': board,
+        'board_json': board_json,
+        'is_user_turn': board.current_turn == game.user_color and game.result == 'playing',
+        'user_color': json.dumps(game.user_color),
+        'game_result': json.dumps(game.result),
+    }
+    
+    return render(request, 'ai_assistant/chess/game.html', context)
+
+
+def chess_make_move(request, game_id):
+    """Обработка хода пользователя"""
+    from .models import ChessGame
+    from .chess_engine import ChessBoard, create_bot
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        game = ChessGame.objects.get(id=game_id, user=request.user)
+    except ChessGame.DoesNotExist:
+        return JsonResponse({'error': 'Game not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Database error: {str(e)}'}, status=500)
+    
+    if game.result != 'playing':
+        return JsonResponse({'error': 'Game is not active'}, status=400)
+    
+    # Получаем ход
+    from_pos = request.POST.get('from')
+    to_pos = request.POST.get('to')
+    
+    if not from_pos or not to_pos:
+        return JsonResponse({'error': 'Invalid move'}, status=400)
+    
+    try:
+        # Конвертируем нотацию
+        from_col = ord(from_pos[0]) - ord('a')
+        from_row = 8 - int(from_pos[1])
+        to_col = ord(to_pos[0]) - ord('a')
+        to_row = 8 - int(to_pos[1])
+        
+        # Отладочная информация
+        print(f"Received move: {from_pos} -> {to_pos}")
+        print(f"Converted coordinates: ({from_row}, {from_col}) -> ({to_row}, {to_col})")
+        
+        # Создаем доску и делаем ход
+        board = ChessBoard(game.fen_position)
+        
+        print(f"Current turn: {board.current_turn}, User color: {game.user_color}")
+        print(f"Board position at ({from_row}, {from_col}): {board.get_piece(from_row, from_col)}")
+        
+        # Проверяем что ход пользователя
+        if board.current_turn != game.user_color:
+            return JsonResponse({'error': f'Not your turn. Current: {board.current_turn}, User: {game.user_color}'}, status=400)
+        
+        # Проверяем корректность хода
+        piece = board.get_piece(from_row, from_col)
+        if not piece or board.get_piece_color(piece) != game.user_color:
+            return JsonResponse({'error': f'Invalid piece. Piece: {piece}, Color: {board.get_piece_color(piece) if piece else None}, User color: {game.user_color}'}, status=400)
+        
+        valid_moves = board.get_pseudo_legal_moves(from_row, from_col)
+        if (to_row, to_col) not in valid_moves:
+            return JsonResponse({'error': f'Invalid move. From: ({from_row}, {from_col}), To: ({to_row}, {to_col}), Valid moves: {valid_moves}'}, status=400)
+        
+        # Делаем ход пользователя
+        try:
+            board.make_move((from_row, from_col), (to_row, to_col))
+            game.fen_position = board.to_fen()
+        except Exception as e:
+            return JsonResponse({'error': f'Error making move: {str(e)}'}, status=400)
+        
+        # Обновляем историю ходов
+        if game.moves_history:
+            game.moves_history += f" {board.fullmove_number}."
+        else:
+            game.moves_history = f"{board.fullmove_number}."
+        
+        # Добавляем ход в историю
+        game.moves_history += f" {from_pos}{to_pos}"
+        
+        # Временно упрощаем проверку конца игры
+        # TODO: Добавить полную проверку шаха, мата, патa
+        try:
+            if board.is_in_check('black') and board.is_in_check('white'):
+                game.result = 'draw'
+            elif board.is_in_check('black'):
+                game.result = 'white_win'
+            elif board.is_in_check('white'):
+                game.result = 'black_win'
+        except Exception as e:
+            print(f"Error checking game end: {str(e)}")
+            # Продолжаем игру если есть ошибка в проверке
+        
+        game.save()
+        
+        # Если игра продолжается, делаем ход бота
+        bot_move = None
+        if game.result == 'playing':
+            bot = create_bot(game.bot_difficulty)
+            bot.color = 'black' if game.user_color == 'white' else 'white'
+            
+            bot_move = bot.get_move(board)
+            if bot_move:
+                board.make_move(bot_move[0], bot_move[1])
+                game.fen_position = board.to_fen()
+                
+                # Добавляем ход бота в историю
+                bot_from_str = f"{chr(ord('a') + bot_move[0][1])}{8 - bot_move[0][0]}"
+                bot_to_str = f"{chr(ord('a') + bot_move[1][1])}{8 - bot_move[1][0]}"
+                game.moves_history += f" {bot_from_str}{bot_to_str}"
+                
+                # Проверяем конец игры после хода бота
+                if board.is_in_check('black') and board.is_in_check('white'):
+                    game.result = 'draw'
+                elif board.is_in_check('black'):
+                    game.result = 'white_win'
+                elif board.is_in_check('white'):
+                    game.result = 'black_win'
+                
+                game.save()
+        
+        # Обновляем статистику если игра закончена
+        if game.result != 'playing':
+            try:
+                from .models import ChessStats
+                stats, _ = ChessStats.objects.get_or_create(user=request.user)
+                stats.update_stats(game)
+            except Exception as e:
+                print(f"Error updating stats: {str(e)}")
+                # Не прерываем игру из-за ошибки со статистикой
+        
+        return JsonResponse({
+            'success': True,
+            'fen': game.fen_position,
+            'result': game.result,
+            'bot_move': bot_move is not None if game.result == 'playing' else False,
+            'board': json.dumps(board.board)
+        })
+        
+    except Exception as e:
+        print(f"Error in chess_make_move: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': f'Server error: {str(e)}'}, status=500)
+
+
+def chess_stats(request):
+    """Статистика шахмат"""
+    from .models import ChessStats, ChessGame
+    
+    stats, created = ChessStats.objects.get_or_create(user=request.user)
+    
+    # Получаем все партии
+    games = ChessGame.objects.filter(user=request.user).order_by('-started_at')
+    
+    # Статистика по сложностям
+    difficulty_stats = {}
+    for difficulty in ['easy', 'medium', 'hard']:
+        diff_games = games.filter(bot_difficulty=difficulty)
+        difficulty_stats[difficulty] = {
+            'games': diff_games.count(),
+            'wins': diff_games.filter(
+                models.Q(result='white_win', user_color='white') |
+                models.Q(result='black_win', user_color='black')
+            ).count(),
+            'draws': diff_games.filter(result='draw').count(),
+            'losses': diff_games.filter(
+                models.Q(result='white_win', user_color='black') |
+                models.Q(result='black_win', user_color='white')
+            ).count(),
+        }
+    
+    context = {
+        'stats': stats,
+        'games': games[:20],  # Последние 20 партий
+        'difficulty_stats': difficulty_stats,
+    }
+    
+    return render(request, 'ai_assistant/chess/stats.html', context)
+
+
+def about(request):
+    """Страница О нас"""
+    return render(request, 'ai_assistant/about.html')

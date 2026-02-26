@@ -1,0 +1,720 @@
+{% extends 'base.html' %}
+
+{% block title %}Шахматная партия - StudySense{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px 0;
+    }
+
+    .game-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .game-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .game-title {
+        font-size: 2rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+    }
+
+    .game-info {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .info-item {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .game-content {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 30px;
+        align-items: start;
+    }
+
+    .chess-board-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .chess-board {
+        display: grid;
+        grid-template-columns: repeat(8, 60px);
+        grid-template-rows: repeat(8, 60px);
+        border: 3px solid #8b4513;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .square {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .square.white {
+        background: #f0d9b5;
+    }
+
+    .square.black {
+        background: #b58863;
+    }
+
+    .square:hover {
+        opacity: 0.8;
+    }
+
+    .square.selected {
+        background: #7fc97f !important;
+        box-shadow: inset 0 0 0 3px #5cb85c;
+    }
+
+    .square.possible-move {
+        position: relative;
+    }
+
+    .square.possible-move::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: rgba(92, 184, 92, 0.7);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .square.possible-capture::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 3px solid rgba(220, 53, 69, 0.7);
+        border-radius: 4px;
+        top: 0;
+        left: 0;
+    }
+
+    .piece {
+        user-select: none;
+        transition: transform 0.2s ease;
+    }
+
+    .piece:hover {
+        transform: scale(1.1);
+    }
+
+    .game-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .sidebar-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-card h3 {
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .turn-indicator {
+        text-align: center;
+        padding: 15px;
+        border-radius: 10px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .turn-indicator.user-turn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        animation: pulse 2s infinite;
+    }
+
+    .turn-indicator.bot-turn {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+
+    .moves-history {
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .game-controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .control-btn {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        text-align: center;
+    }
+
+    .control-btn.primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .control-btn.secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+    }
+
+    .control-btn.danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+
+    .control-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        text-decoration: none;
+        color: white;
+    }
+
+    .game-status {
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .status-playing {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+    }
+
+    .status-win {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+
+    .status-loss {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+
+    .status-draw {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        color: white;
+    }
+
+    .coordinates {
+        position: absolute;
+        font-size: 10px;
+        color: #666;
+        font-weight: 600;
+    }
+
+    .rank-label {
+        left: 2px;
+        top: 2px;
+    }
+
+    .file-label {
+        right: 2px;
+        bottom: 2px;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .loading-content {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .spinner {
+        font-size: 2rem;
+        animation: spin 1s linear infinite;
+        margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Адаптивность */
+    @media (max-width: 1024px) {
+        .game-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .chess-board {
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+        }
+        
+        .square {
+            width: 50px;
+            height: 50px;
+            font-size: 30px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .game-container {
+            margin: 10px;
+            padding: 20px;
+        }
+        
+        .chess-board {
+            grid-template-columns: repeat(8, 40px);
+            grid-template-rows: repeat(8, 40px);
+        }
+        
+        .square {
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+        }
+        
+        .game-info {
+            gap: 10px;
+        }
+        
+        .info-item {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="game-header">
+        <h1 class="game-title">♟️ Шахматная партия</h1>
+        
+        <div class="game-info">
+            <div class="info-item">
+                <i class="fas fa-robot me-2"></i>
+                {{ game.get_bot_difficulty_display }}
+            </div>
+            <div class="info-item">
+                <i class="fas fa-chess me-2"></i>
+                {{ game.get_user_color_display }}
+            </div>
+            <div class="info-item">
+                <i class="fas fa-star me-2"></i>
+                {% if game.result == 'playing' %}
+                    Игра идет
+                {% elif game.result == 'draw' %}
+                    Ничья
+                {% elif game.result == 'white_win' %}
+                    {% if game.user_color == 'white' %}Победа{% else %}Поражение{% endif %}
+                {% elif game.result == 'black_win' %}
+                    {% if game.user_color == 'black' %}Победа{% else %}Поражение{% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="game-content">
+        <div class="chess-board-container">
+            <div class="chess-board" id="chessBoard">
+                <!-- Доска будет генерироваться JavaScript -->
+            </div>
+        </div>
+
+        <div class="game-sidebar">
+            <!-- Индикатор хода -->
+            <div class="sidebar-card">
+                <div class="turn-indicator {% if is_user_turn %}user-turn{% else %}bot-turn{% endif %}" id="turnIndicator">
+                    {% if is_user_turn %}
+                        <i class="fas fa-user me-2"></i>Ваш ход
+                    {% else %}
+                        <i class="fas fa-robot me-2"></i>Ход бота
+                    {% endif %}
+                </div>
+                
+                <div class="game-status status-{{ game.result }}" id="gameStatus">
+                    {% if game.result == 'playing' %}
+                        <i class="fas fa-play me-2"></i>Игра идет
+                    {% elif game.result == 'draw' %}
+                        <i class="fas fa-handshake me-2"></i>Ничья!
+                    {% elif game.result == 'white_win' %}
+                        {% if game.user_color == 'white' %}
+                            <i class="fas fa-trophy me-2"></i>Победа! +{{ game.points_earned }} очков
+                        {% else %}
+                            <i class="fas fa-times me-2"></i>Поражение
+                        {% endif %}
+                    {% elif game.result == 'black_win' %}
+                        {% if game.user_color == 'black' %}
+                            <i class="fas fa-trophy me-2"></i>Победа! +{{ game.points_earned }} очков
+                        {% else %}
+                            <i class="fas fa-times me-2"></i>Поражение
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- История ходов -->
+            <div class="sidebar-card">
+                <h3>
+                    <i class="fas fa-history"></i>
+                    История ходов
+                </h3>
+                <div class="moves-history" id="movesHistory">
+                    {{ game.moves_history|default:"Пока нет ходов" }}
+                </div>
+            </div>
+
+            <!-- Управление -->
+            <div class="sidebar-card">
+                <h3>
+                    <i class="fas fa-gamepad"></i>
+                    Управление
+                </h3>
+                <div class="game-controls">
+                    <a href="{% url 'chess_new_game' %}" class="control-btn primary">
+                        <i class="fas fa-plus"></i> Новая
+                    </a>
+                    <a href="{% url 'chess_home' %}" class="control-btn secondary">
+                        <i class="fas fa-home"></i> Выход
+                    </a>
+                </div>
+            </div>
+
+            <!-- Правила -->
+            <div class="sidebar-card">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Подсказка
+                </h3>
+                <p style="font-size: 0.9rem; color: #666; margin: 0;">
+                    Кликните на фигуру, затем на клетку для хода. Зеленые точки показывают возможные ходы, красные рамки - возможные взятия.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Оверлей загрузки -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner">♟️</div>
+        <h4>Бот думает...</h4>
+        <p style="color: #666; margin: 0;">Это может занять несколько секунд</p>
+    </div>
+</div>
+
+<script>
+const PIECES = {
+    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+};
+
+// Инициализация переменных
+let board = null;
+let selectedSquare = null;
+let isUserTurn = false;
+let gameResult = '';
+let userColor = '';
+
+// Загрузка данных из Django
+function initializeGame() {
+    board = {{ board_json|safe }};
+    isUserTurn = {{ is_user_turn|yesno:"true,false" }};
+    gameResult = {{ game_result|safe }};
+    userColor = {{ user_color|safe }};
+}
+
+function initBoard() {
+    const boardElement = document.getElementById('chessBoard');
+    boardElement.innerHTML = '';
+    
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const square = document.createElement('div');
+            square.className = `square ${(row + col) % 2 === 0 ? 'white' : 'black'}`;
+            square.dataset.row = row;
+            square.dataset.col = col;
+            
+            // Добавляем координаты
+            if (col === 0) {
+                const rankLabel = document.createElement('span');
+                rankLabel.className = 'coordinates rank-label';
+                rankLabel.textContent = 8 - row;
+                square.appendChild(rankLabel);
+            }
+            if (row === 7) {
+                const fileLabel = document.createElement('span');
+                fileLabel.className = 'coordinates file-label';
+                fileLabel.textContent = String.fromCharCode(97 + col);
+                square.appendChild(fileLabel);
+            }
+            
+            const piece = board[row][col];
+            if (piece) {
+                const pieceElement = document.createElement('span');
+                pieceElement.className = 'piece';
+                pieceElement.textContent = PIECES[piece] || piece;
+                square.appendChild(pieceElement);
+            }
+            
+            square.addEventListener('click', handleSquareClick);
+            boardElement.appendChild(square);
+        }
+    }
+}
+
+function handleSquareClick(event) {
+    if (gameResult !== 'playing' || !isUserTurn) return;
+    
+    const square = event.currentTarget;
+    const row = parseInt(square.dataset.row);
+    const col = parseInt(square.dataset.col);
+    
+    console.log(`Clicked: (${row}, ${col}), Selected: ${selectedSquare ? `(${selectedSquare.row}, ${selectedSquare.col})` : 'none'}`);
+    
+    if (selectedSquare) {
+        // Проверяем, кликнули ли на ту же клетку
+        if (selectedSquare.row === row && selectedSquare.col === col) {
+            console.log('Same square clicked - deselecting');
+            // Снимаем выделение
+            clearSelection();
+            return;
+        }
+        
+        console.log(`Attempting move: (${selectedSquare.row}, ${selectedSquare.col}) -> (${row}, ${col})`);
+        // Пытаемся сделать ход
+        makeMove(selectedSquare.row, selectedSquare.col, row, col);
+        clearSelection();
+    } else {
+        // Выбираем фигуру
+        const piece = board[row][col];
+        console.log(`Piece at (${row}, ${col}): ${piece}`);
+        if (piece && isUserPiece(piece)) {
+            selectedSquare = { row, col };
+            square.classList.add('selected');
+            showPossibleMoves(row, col);
+        }
+    }
+}
+
+function isUserPiece(piece) {
+    if (userColor === 'white') {
+        return piece && piece === piece.toUpperCase();
+    } else {
+        return piece && piece === piece.toLowerCase();
+    }
+}
+
+function showPossibleMoves(fromRow, fromCol) {
+    // Здесь должна быть логика показа возможных ходов
+    // Упрощенная версия - показываем все пустые клетки
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            if (row === fromRow && col === fromCol) continue;
+            
+            const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            const targetPiece = board[row][col];
+            
+            if (!targetPiece) {
+                square.classList.add('possible-move');
+            } else if (isUserPiece(board[fromRow][fromCol]) !== isUserPiece(targetPiece)) {
+                square.classList.add('possible-capture');
+            }
+        }
+    }
+}
+
+function clearSelection() {
+    selectedSquare = null;
+    document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.possible-move').forEach(el => el.classList.remove('possible-move'));
+    document.querySelectorAll('.possible-capture').forEach(el => el.classList.remove('possible-capture'));
+}
+
+async function makeMove(fromRow, fromCol, toRow, toCol) {
+    const fromPos = `${String.fromCharCode(97 + fromCol)}${8 - fromRow}`;
+    const toPos = `${String.fromCharCode(97 + toCol)}${8 - toRow}`;
+    
+    showLoading(true);
+    
+    try {
+        const response = await fetch(`/games/chess/make-move/{{ game.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: `from=${fromPos}&to=${toPos}`
+        });
+        
+        const data = await response.json();
+        console.log('Server response:', data);
+        
+        if (data.success) {
+            // Обновляем доску
+            updateBoard(data.board);
+            
+            // Обновляем статус
+            if (data.result !== 'playing') {
+                gameResult = data.result;
+                updateGameStatus(data.result);
+                // Не перезагружаем страницу, просто показываем результат
+                isUserTurn = false;
+            } else if (data.bot_move) {
+                // Бот сделал ход, обновляем доску
+                setTimeout(() => {
+                    updateBoard(data.board);
+                    isUserTurn = true;
+                    updateTurnIndicator(true);
+                }, 500);
+            } else {
+                isUserTurn = true;
+                updateTurnIndicator(true);
+            }
+        } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Произошла ошибка при отправке хода');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function updateBoard(newBoard) {
+    console.log('Updating board with:', newBoard);
+    // Обновляем доску новыми данными
+    board = newBoard;
+    initBoard();
+}
+
+function updateTurnIndicator(isUser) {
+    const indicator = document.getElementById('turnIndicator');
+    if (isUser) {
+        indicator.className = 'turn-indicator user-turn';
+        indicator.innerHTML = '<i class="fas fa-user me-2"></i>Ваш ход';
+    } else {
+        indicator.className = 'turn-indicator bot-turn';
+        indicator.innerHTML = '<i class="fas fa-robot me-2"></i>Ход бота';
+    }
+}
+
+function updateGameStatus(result) {
+    const status = document.getElementById('gameStatus');
+    status.className = `game-status status-${result}`;
+    
+    // Обновляем текст статуса в зависимости от результата
+    // Это будет обновлено при перезагрузке страницы
+}
+
+function showLoading(show) {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = show ? 'flex' : 'none';
+    isUserTurn = !show;
+    updateTurnIndicator(!show);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGame();
+    initBoard();
+});
+</script>
+{% endblock %}

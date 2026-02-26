@@ -1,0 +1,303 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}{{ title }} - Админ панель{% endblock %}
+
+{% block extrahead %}
+<style>
+.history-item {
+    border-left: 4px solid #667eea;
+    padding: 20px;
+    margin-bottom: 15px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.points-positive {
+    color: #28a745;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.points-negative {
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.filter-section {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.stats-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-box input {
+    padding-left: 40px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-history me-2"></i>{{ title }}
+        </h1>
+        <a href="{% url 'admin_panel:points_management' %}" class="btn btn-primary">
+            <i class="fas fa-arrow-left me-2"></i>Назад к управлению
+        </a>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-summary">
+        <div class="row">
+            <div class="col-md-3 text-center">
+                <h3>{{ adjustments.count }}</h3>
+                <div>Всего изменений</div>
+            </div>
+            <div class="col-md-3 text-center">
+                <h3>{{ adjustments|filter:'points_change'|filter:'gt':0|list|length }}</h3>
+                <div>Положительных</div>
+            </div>
+            <div class="col-md-3 text-center">
+                <h3>{{ adjustments|filter:'points_change'|filter:'lt':0|list|length }}</h3>
+                <div>Отрицательных</div>
+            </div>
+            <div class="col-md-3 text-center">
+                <h3>{{ adjustments|filter:'points_change'|sum }}</h3>
+                <div>Общая сумма изменений</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filter-section">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Поиск по пользователю или причине...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="filterType" class="form-select">
+                    <option value="">Все типы</option>
+                    <option value="positive">Только положительные</option>
+                    <option value="negative">Только отрицательные</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="filterUser" class="form-select">
+                    <option value="">Все пользователи</option>
+                    {% for adjustment in adjustments %}
+                        <option value="{{ adjustment.user.username }}">{{ adjustment.user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- История изменений -->
+    <div id="historyList">
+        {% for adjustment in adjustments %}
+            <div class="history-item" 
+                 data-user="{{ adjustment.user.username|lower }}" 
+                 data-reason="{{ adjustment.reason|lower }}"
+                 data-type="{% if adjustment.points_change > 0 %}positive{% else %}negative{% endif %}">
+                
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ adjustment.user.username|first|upper }}
+                    </div>
+                    <div>
+                        <strong>{{ adjustment.user.username }}</strong>
+                        <br>
+                        <small class="text-muted">{{ adjustment.user.get_full_name|default:adjustment.user.email }}</small>
+                    </div>
+                    <div class="ms-auto">
+                        <span class="{% if adjustment.points_change > 0 %}points-positive{% else %}points-negative{% endif %}">
+                            {{ adjustment.points_change|default_if_none:"0"|add:"0"|stringformat:"+d" }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <strong>Причина:</strong> {{ adjustment.reason }}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>{{ adjustment.created_at|date:"d.m.Y H:i:s" }}
+                    </small>
+                    {% if adjustment.created_by %}
+                        <small class="text-muted">
+                            <i class="fas fa-user-edit me-1"></i>Изменил: {{ adjustment.created_by.username }}
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-center py-5">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">История изменений пуста</h4>
+                <p class="text-muted">Здесь будут отображаться все изменения очков пользователей</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация (если нужно) -->
+    {% if is_paginated %}
+    <nav aria-label="История изменений">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; Первая</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const filterType = document.getElementById('filterType');
+    const filterUser = document.getElementById('filterUser');
+    const historyItems = document.querySelectorAll('.history-item');
+    
+    function filterHistory() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const typeFilter = filterType.value;
+        const userFilter = filterUser.value.toLowerCase();
+        
+        historyItems.forEach(item => {
+            const user = item.dataset.user;
+            const reason = item.dataset.reason;
+            const type = item.dataset.type;
+            
+            let show = true;
+            
+            // Поиск по тексту
+            if (searchTerm && !user.includes(searchTerm) && !reason.includes(searchTerm)) {
+                show = false;
+            }
+            
+            // Фильтр по типу
+            if (typeFilter && type !== typeFilter) {
+                show = false;
+            }
+            
+            // Фильтр по пользователю
+            if (userFilter && user !== userFilter) {
+                show = false;
+            }
+            
+            item.style.display = show ? 'block' : 'none';
+        });
+        
+        // Показываем сообщение если ничего не найдено
+        const visibleItems = Array.from(historyItems).filter(item => item.style.display !== 'none');
+        let noResultsMsg = document.getElementById('noResults');
+        
+        if (visibleItems.length === 0 && !noResultsMsg) {
+            noResultsMsg = document.createElement('div');
+            noResultsMsg.id = 'noResults';
+            noResultsMsg.className = 'text-center py-5';
+            noResultsMsg.innerHTML = `
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Ничего не найдено</h4>
+                <p class="text-muted">Попробуйте изменить параметры фильтрации</p>
+            `;
+            document.getElementById('historyList').appendChild(noResultsMsg);
+        } else if (visibleItems.length > 0 && noResultsMsg) {
+            noResultsMsg.remove();
+        }
+    }
+    
+    // Обработчики событий
+    searchInput.addEventListener('input', filterHistory);
+    filterType.addEventListener('change', filterHistory);
+    filterUser.addEventListener('change', filterHistory);
+    
+    // Автозаполнение уникальных пользователей
+    const users = new Set();
+    historyItems.forEach(item => {
+        users.add(item.dataset.user);
+    });
+    
+    filterUser.innerHTML = '<option value="">Все пользователи</option>';
+    Array.from(users).sort().forEach(user => {
+        const option = document.createElement('option');
+        option.value = user;
+        option.textContent = user.charAt(0).toUpperCase() + user.slice(1);
+        filterUser.appendChild(option);
+    });
+});
+</script>
+{% endblock %}

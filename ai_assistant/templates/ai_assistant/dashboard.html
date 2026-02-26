@@ -93,6 +93,126 @@
     </div>
 </div>
 
+<!-- Заметки студента -->
+<div class="row mt-4">
+    <!-- Быстрая заметка -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Быстрая заметка
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="quickNoteForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_title" class="form-label">Заголовок</label>
+                        {{ quick_note_form.title }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_content" class="form-label">Содержание</label>
+                        {{ quick_note_form.content }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_priority" class="form-label">Приоритет</label>
+                        {{ quick_note_form.priority }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-2"></i>Создать заметку
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Срочные заметки -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Срочные задачи
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if urgent_notes %}
+                    {% for note in urgent_notes %}
+                        <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert" data-note-id="{{ note.id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-1">{{ note.title }}</h6>
+                                    <p class="mb-1">{{ note.content|truncatewords:15 }}</p>
+                                    <small class="text-muted">{{ note.created_at|date:"H:i" }}</small>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-success btn-complete-note" title="Отметить выполненным">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-delete-note" title="Удалить">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-check-circle me-2"></i>Срочных задач нет!
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние заметки -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-sticky-note me-2"></i>Последние заметки
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_notes %}
+                    {% for note in recent_notes %}
+                        <div class="alert {% if note.priority == 'high' %}alert-warning{% elif note.priority == 'medium' %}alert-info{% else %}alert-secondary{% endif %} alert-dismissible fade show mb-2" role="alert" data-note-id="{{ note.id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-1">
+                                        {{ note.title }}
+                                        {% if note.is_pinned %}
+                                            <i class="fas fa-thumbtack text-primary ms-1"></i>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="mb-1">{{ note.content|truncatewords:15 }}</p>
+                                    <small class="text-muted">
+                                        {{ note.created_at|date:"H:i" }} 
+                                        <span class="badge bg-{{ note.priority|yesno:'danger,warning,info,secondary' }} ms-1">
+                                            {{ note.get_priority_display }}
+                                        </span>
+                                    </small>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-success btn-complete-note" title="Отметить выполненным">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-delete-note" title="Удалить">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Заметок пока нет. Создайте первую!
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Быстрые действия -->
 <div class="row mt-4">
     <div class="col-12">
@@ -133,4 +253,176 @@
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Обработка формы быстрой заметки
+document.getElementById('quickNoteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "create_quick_note" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Очищаем форму
+            this.reset();
+            
+            // Создаем новую заметку в DOM
+            const newNote = createNoteElement(data);
+            
+            // Добавляем в список последних заметок
+            const recentNotesContainer = document.querySelector('.col-md-4:last-child .card-body');
+            const emptyMessage = recentNotesContainer.querySelector('.text-muted');
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+            
+            // Если заметка срочная, добавляем и в срочные
+            if (data.priority === 'urgent') {
+                const urgentContainer = document.querySelector('.col-md-4:nth-child(2) .card-body');
+                const urgentEmpty = urgentContainer.querySelector('.text-muted');
+                if (urgentEmpty) {
+                    urgentEmpty.remove();
+                }
+                const urgentNote = createNoteElement(data, true);
+                urgentContainer.insertAdjacentHTML('afterbegin', urgentNote);
+            } else {
+                recentNotesContainer.insertAdjacentHTML('afterbegin', newNote);
+            }
+            
+            // Показываем уведомление
+            showNotification('Заметка создана успешно!', 'success');
+        } else {
+            showNotification('Ошибка при создании заметки', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Произошла ошибка', 'danger');
+    });
+});
+
+// Функция создания элемента заметки
+function createNoteElement(noteData, isUrgent = false) {
+    const alertClass = isUrgent ? 'alert-danger' : 
+                      (noteData.priority === 'high' ? 'alert-warning' : 
+                       noteData.priority === 'medium' ? 'alert-info' : 'alert-secondary');
+    
+    return `
+        <div class="alert ${alertClass} alert-dismissible fade show mb-2" role="alert" data-note-id="${noteData.note_id}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <h6 class="alert-heading mb-1">${noteData.title}</h6>
+                    <p class="mb-1">${noteData.content}</p>
+                    <small class="text-muted">
+                        ${noteData.created_at}
+                        <span class="badge bg-${noteData.priority === 'urgent' ? 'danger' : noteData.priority === 'high' ? 'warning' : noteData.priority === 'medium' ? 'info' : 'secondary'} ms-1">
+                            ${noteData.priority_label}
+                        </span>
+                    </small>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-success btn-complete-note" title="Отметить выполненным">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-delete-note" title="Удалить">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Обработка кликов на кнопки заметок
+document.addEventListener('click', function(e) {
+    // Кнопка "Отметить выполненным"
+    if (e.target.closest('.btn-complete-note')) {
+        const noteElement = e.target.closest('[data-note-id]');
+        const noteId = noteElement.dataset.noteId;
+        
+        fetch(`/notes/${noteId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                noteElement.style.opacity = data.is_completed ? '0.5' : '1';
+                noteElement.style.textDecoration = data.is_completed ? 'line-through' : 'none';
+                showNotification(data.is_completed ? 'Заметка выполнена!' : 'Заметка отмечена как невыполненная', 'success');
+            }
+        });
+    }
+    
+    // Кнопка "Удалить"
+    if (e.target.closest('.btn-delete-note')) {
+        const noteElement = e.target.closest('[data-note-id]');
+        const noteId = noteElement.dataset.noteId;
+        
+        if (confirm('Вы уверены, что хотите удалить эту заметку?')) {
+            fetch(`/notes/${noteId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    noteElement.remove();
+                    showNotification('Заметка удалена', 'success');
+                    
+                    // Проверяем, не нужно ли показать сообщение об отсутствии заметок
+                    checkEmptyNotes();
+                }
+            });
+        }
+    }
+});
+
+// Функция проверки пустых контейнеров
+function checkEmptyNotes() {
+    const recentContainer = document.querySelector('.col-md-4:last-child .card-body');
+    const urgentContainer = document.querySelector('.col-md-4:nth-child(2) .card-body');
+    
+    if (recentContainer && recentContainer.children.length === 0) {
+        recentContainer.innerHTML = '<p class="text-muted mb-0"><i class="fas fa-info-circle me-2"></i>Заметок пока нет. Создайте первую!</p>';
+    }
+    
+    if (urgentContainer && urgentContainer.children.length === 0) {
+        urgentContainer.innerHTML = '<p class="text-muted mb-0"><i class="fas fa-check-circle me-2"></i>Срочных задач нет!</p>';
+    }
+}
+
+// Функция показа уведомлений
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Автоматическое скрытие через 3 секунды
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
 {% endblock %}

@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}О нас - StudySense{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-5">
+                        <div class="mb-4">
+                            <i class="fas fa-graduation-cap fa-4x text-primary"></i>
+                        </div>
+                        <h1 class="display-4 fw-bold">О StudySense</h1>
+                        <p class="lead text-muted">Ваш умный помощник в учебе</p>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-rocket fa-2x text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="fw-bold">Наша миссия</h5>
+                                    <p class="text-muted">Сделать обучение доступным, интересным и эффективным для каждого студента с помощью современных технологий.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-eye fa-2x text-success"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="fw-bold">Наше видение</h5>
+                                    <p class="text-muted">Стать ведущей образовательной платформой, которая помогает студентам достигать академического успеха.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <h3 class="fw-bold mb-4 text-center">Что мы предлагаем</h3>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold">
+                                            <i class="fas fa-brain text-primary me-2"></i>
+                                            AI-ассистент
+                                        </h6>
+                                        <p class="small text-muted mb-0">Умный помощник для ответов на учебные вопросы</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold">
+                                            <i class="fas fa-chess text-success me-2"></i>
+                                            Шахматы
+                                        </h6>
+                                        <p class="small text-muted mb-0">Развивайте логику играя против AI</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold">
+                                            <i class="fas fa-gamepad text-warning me-2"></i>
+                                            Образовательные игры
+                                        </h6>
+                                        <p class="small text-muted mb-0">Учитесь играя по разным предметам</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold">
+                                            <i class="fas fa-tasks text-info me-2"></i>
+                                            Трекер задач
+                                        </h6>
+                                        <p class="small text-muted mb-0">Организуйте свою учебную деятельность</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <h3 class="fw-bold mb-4 text-center">Наши преимущества</h3>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <div>
+                                        <strong>Современные технологии</strong>
+                                        <p class="text-muted mb-0 small">Используем передовые AI технологии для обучения</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <div>
+                                        <strong>Персонализация</strong>
+                                        <p class="text-muted mb-0 small">Адаптивное обучение под индивидуальные потребности</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <div>
+                                        <strong>Доступность</strong>
+                                        <p class="text-muted mb-0 small">Учитесь в любое время и в любом месте</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <h4 class="fw-bold mb-3">Присоединяйтесь к нам!</h4>
+                        <p class="text-muted mb-4">Начните свой путь к успешному обучению уже сегодня</p>
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg px-4">
+                            <i class="fas fa-home me-2"></i>
+                            На главную
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

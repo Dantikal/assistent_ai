@@ -368,6 +368,43 @@
         </div>
     </div>
 
+    <!-- Базы данных -->
+    <div class="game-card">
+        <div class="game-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <i class="fas fa-database game-icon"></i>
+            <div class="game-title">Базы данных</div>
+            <div class="game-description">SQL и теория баз данных</div>
+        </div>
+        <div class="game-card-body">
+            <div class="game-features">
+                <span class="difficulty-badge difficulty-easy">Основы SQL</span>
+                <span class="difficulty-badge difficulty-medium">Теория</span>
+                <span class="difficulty-badge difficulty-hard">Продвинутое</span>
+            </div>
+            <p style="font-size: 13px; color: #666; flex: 1;">
+                Изучите основы SQL и теорию баз данных. Ответы на вопросы о запросах, 
+                нормализации, транзакциях и индексах.
+            </p>
+            <div class="game-stats">
+                <div class="stat">
+                    <div class="stat-value">+10</div>
+                    <div class="stat-label">Основы</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">+25</div>
+                    <div class="stat-label">Теория</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">+45</div>
+                    <div class="stat-label">Продвинутое</div>
+                </div>
+            </div>
+            <a href="{% url 'games_database' %}" class="game-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-play-circle"></i> Играть
+            </a>
+        </div>
+    </div>
+
     <!-- Английский -->
     <div class="game-card">
         <div class="game-card-header" style="background: linear-gradient(135deg, #fad961 0%, #f76b1c 100%);">
@@ -400,6 +437,44 @@
                 </div>
             </div>
             <a href="{% url 'games_english' %}" class="game-button" style="background: linear-gradient(135deg, #fad961 0%, #f76b1c 100%); color: #333;">
+                <i class="fas fa-play-circle"></i> Играть
+            </a>
+        </div>
+    </div>
+</div>
+
+    <!-- Шахматы -->
+    <div class="game-card">
+        <div class="game-card-header" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+            <i class="fas fa-chess game-icon"></i>
+            <div class="game-title">Шахматы</div>
+            <div class="game-description">Играйте против AI ботов</div>
+        </div>
+        <div class="game-card-body">
+            <div class="game-features">
+                <span class="difficulty-badge difficulty-easy">Легкий бот</span>
+                <span class="difficulty-badge difficulty-medium">Средний бот</span>
+                <span class="difficulty-badge difficulty-hard">Сложный бот</span>
+            </div>
+            <p style="font-size: 13px; color: #666; flex: 1;">
+                Классическая шахматная игра с тремя уровнями сложности AI. Развивайте логическое мышление, 
+                получайте очки за победы и соревнуйтесь в рейтинге.
+            </p>
+            <div class="game-stats">
+                <div class="stat">
+                    <div class="stat-value">+20</div>
+                    <div class="stat-label">Легкий</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">+50</div>
+                    <div class="stat-label">Средний</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">+100</div>
+                    <div class="stat-label">Сложный</div>
+                </div>
+            </div>
+            <a href="{% url 'chess_home' %}" class="game-button" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
                 <i class="fas fa-play-circle"></i> Играть
             </a>
         </div>

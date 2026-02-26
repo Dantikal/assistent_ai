@@ -3,6 +3,113 @@ from django.contrib.auth.models import User
 from schedule.models import Subject
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+
+
+class PointsAdjustment(models.Model):
+    """История изменений очков пользователя"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    points_change = models.IntegerField(verbose_name="Изменение очков")
+    reason = models.CharField(max_length=200, verbose_name="Причина изменения")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата изменения")
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="points_adjustments_made",
+        verbose_name="Кто изменил"
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Изменение очков"
+        verbose_name_plural = "Изменения очков"
+    
+    def __str__(self):
+        return f"{self.user.username}: {self.points_change:+d} - {self.reason}"
+
+
+class StudentNote(models.Model):
+    """Заметки студента"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    title = models.CharField(max_length=200, verbose_name="Заголовок")
+    content = models.TextField(verbose_name="Содержание заметки")
+    
+    # Категории и приоритеты
+    PRIORITY_CHOICES = [
+        ('low', 'Низкий'),
+        ('medium', 'Средний'), 
+        ('high', 'Высокий'),
+        ('urgent', 'Срочный'),
+    ]
+    
+    CATEGORY_CHOICES = [
+        ('general', 'Общее'),
+        ('homework', 'Домашнее задание'),
+        ('exam', 'Экзамен'),
+        ('project', 'Проект'),
+        ('idea', 'Идея'),
+        ('reminder', 'Напоминание'),
+    ]
+    
+    priority = models.CharField(
+        max_length=10, 
+        choices=PRIORITY_CHOICES, 
+        default='medium',
+        verbose_name="Приоритет"
+    )
+    
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default='general',
+        verbose_name="Категория"
+    )
+    
+    # Даты
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
+    deadline = models.DateTimeField(null=True, blank=True, verbose_name="Срок выполнения")
+    
+    # Статусы
+    is_completed = models.BooleanField(default=False, verbose_name="Выполнено")
+    is_pinned = models.BooleanField(default=False, verbose_name="Закреплено")
+    
+    # Связь с предметом (опционально)
+    subject = models.ForeignKey(
+        Subject, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name="Предмет"
+    )
+    
+    # Теги для удобного поиска
+    tags = models.CharField(
+        max_length=500, 
+        blank=True, 
+        help_text="Введите теги через запятую",
+        verbose_name="Теги"
+    )
+    
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+        verbose_name = "Заметка студента"
+        verbose_name_plural = "Заметки студентов"
+    
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+    
+    def get_tags_list(self):
+        """Возвращает список тегов"""
+        return [tag.strip() for tag in self.tags.split(',') if tag.strip()]
+    
+    def is_overdue(self):
+        """Проверяет, просрочена ли заметка"""
+        if self.deadline and not self.is_completed:
+            return timezone.now() > self.deadline
+        return False
 
 
 class KnowledgeCard(models.Model):
@@ -229,6 +336,30 @@ class UserProfile(models.Model):
         if total == 0:
             return 0
         return int((self.correct_answers / total) * 100)
+    
+    def get_leaderboard_position(self):
+        """Получить позицию в таблице лидеров"""
+        try:
+            from django.db.models import Count
+            # Считаем позицию пользователя по очкам
+            higher_scores = UserProfile.objects.filter(points__gt=self.points).count()
+            return higher_scores + 1
+        except:
+            return None
+    
+    @property
+    def is_top_player(self):
+        """Проверить является ли пользователь топ-игроком (топ-10)"""
+        try:
+            position = self.get_leaderboard_position()
+            return position and position <= 10
+        except:
+            return False
+    
+    @property
+    def leaderboard_position(self):
+        """Получить позицию в рейтинге для шаблона"""
+        return self.get_leaderboard_position()
 
 
 class SubjectScore(models.Model):
@@ -257,7 +388,235 @@ class SubjectScore(models.Model):
         return int((self.correct_answers / total) * 100)
 
 
+class TaskCategory(models.Model):
+    """Категории задач для трекера"""
+    name = models.CharField(max_length=100, verbose_name="Название категории")
+    color = models.CharField(max_length=7, default="#667eea", verbose_name="Цвет категории (hex)")
+    icon = models.CharField(max_length=50, default="fas fa-tasks", verbose_name="Иконка (Font Awesome)")
+    description = models.TextField(blank=True, verbose_name="Описание")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = "Категория задач"
+        verbose_name_plural = "Категории задач"
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+
+class TaskTracker(models.Model):
+    """Трекер задач студента"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey(TaskCategory, on_delete=models.CASCADE, verbose_name="Категория")
+    title = models.CharField(max_length=200, verbose_name="Заголовок задачи")
+    description = models.TextField(blank=True, verbose_name="Описание задачи")
+    deadline = models.DateTimeField(null=True, blank=True, verbose_name="Дедлайн")
+    is_completed = models.BooleanField(default=False, verbose_name="Выполнено")
+    points = models.IntegerField(default=1, verbose_name="Баллы за выполнение")
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Дата выполнения")
+    
+    class Meta:
+        verbose_name = "Задача"
+        verbose_name_plural = "Задачи"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+    
+    def save(self, *args, **kwargs):
+        # Если задача выполнена и не была выполнена ранее
+        if self.is_completed and not self.completed_at:
+            self.completed_at = timezone.now()
+            # Начисляем баллы пользователю
+            profile, _ = UserProfile.objects.get_or_create(user=self.user)
+            profile.points += self.points
+            profile.save(update_fields=['points'])
+            
+            # Обновляем статистику по общему рейтингу
+            from .views import update_subject_score
+            update_subject_score(profile, 'Общий рейтинг', self.points, 1, 0)
+        elif not self.is_completed and self.completed_at:
+            # Если статус выполнения снят
+            self.completed_at = None
+            # Убираем баллы
+            profile, _ = UserProfile.objects.get_or_create(user=self.user)
+            profile.points = max(0, profile.points - self.points)
+            profile.save(update_fields=['points'])
+            
+            # Обновляем статистику по общему рейтингу
+            from .views import update_subject_score
+            update_subject_score(profile, 'Общий рейтинг', -self.points, 0, 1)
+        
+        super().save(*args, **kwargs)
+
+
 @receiver(post_save, sender=User)
 def _create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
+
+
+class ChessGame(models.Model):
+    """Шахматная партия"""
+    RESULT_CHOICES = [
+        ('white_win', 'Победа белых'),
+        ('black_win', 'Победа черных'),
+        ('draw', 'Ничья'),
+        ('playing', 'Игра идет'),
+        ('abandoned', 'Брошена'),
+    ]
+    
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Легкий'),
+        ('medium', 'Нормальный'),
+        ('hard', 'Сложный'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    bot_difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, verbose_name="Сложность бота")
+    result = models.CharField(max_length=20, choices=RESULT_CHOICES, default='playing', verbose_name="Результат")
+    user_color = models.CharField(max_length=5, choices=[('white', 'Белые'), ('black', 'Черные')], default='white', verbose_name="Цвет пользователя")
+    
+    # Позиция в формате FEN
+    fen_position = models.TextField(default='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', verbose_name="Позиция FEN")
+    
+    # История ходов в формате PGN
+    moves_history = models.TextField(blank=True, verbose_name="История ходов")
+    
+    # Время партии
+    started_at = models.DateTimeField(auto_now_add=True, verbose_name="Начало партии")
+    ended_at = models.DateTimeField(null=True, blank=True, verbose_name="Конец партии")
+    
+    # Очки за партию
+    points_earned = models.IntegerField(default=0, verbose_name="Заработанные очки")
+    
+    class Meta:
+        verbose_name = "Шахматная партия"
+        verbose_name_plural = "Шахматные партии"
+        ordering = ['-started_at']
+    
+    def __str__(self):
+        return f"Шахматы: {self.user.username} vs {self.get_bot_difficulty_display()} ({self.get_result_display()})"
+    
+    def calculate_points(self):
+        """Рассчитывает очки за партию"""
+        if self.result == 'playing':
+            return 0
+        
+        # Базовые очки в зависимости от сложности
+        base_points = {
+            'easy': 10,
+            'medium': 25,
+            'hard': 50,
+        }
+        
+        # Множитель в зависимости от результата
+        result_multiplier = {
+            'white_win': 1.0 if self.user_color == 'white' else 0.0,
+            'black_win': 1.0 if self.user_color == 'black' else 0.0,
+            'draw': 0.5,
+            'abandoned': 0.0,
+        }
+        
+        points = int(base_points[self.bot_difficulty] * result_multiplier.get(self.result, 0))
+        
+        # Бонус за быструю победу
+        if self.result in ['white_win', 'black_win'] and self.ended_at:
+            duration = (self.ended_at - self.started_at).total_seconds()
+            if duration < 60:  # Меньше минуты
+                points = int(points * 1.5)
+            elif duration < 300:  # Меньше 5 минут
+                points = int(points * 1.2)
+        
+        return points
+    
+    def save(self, *args, **kwargs):
+        # Рассчитываем очки при сохранении результата
+        if self.result != 'playing' and not self.points_earned:
+            self.points_earned = self.calculate_points()
+            # Добавляем очки пользователю
+            if self.points_earned > 0:
+                profile, _ = UserProfile.objects.get_or_create(user=self.user)
+                profile.points += self.points_earned
+                profile.save()
+        
+        # Устанавливаем время окончания
+        if self.result != 'playing' and not self.ended_at:
+            from django.utils import timezone
+            self.ended_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+
+
+class ChessStats(models.Model):
+    """Статистика шахмат пользователя"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    
+    # Общая статистика
+    games_played = models.IntegerField(default=0, verbose_name="Сыграно партий")
+    games_won = models.IntegerField(default=0, verbose_name="Побед")
+    games_drawn = models.IntegerField(default=0, verbose_name="Ничьих")
+    games_lost = models.IntegerField(default=0, verbose_name="Поражений")
+    
+    # Статистика по сложностям
+    easy_wins = models.IntegerField(default=0, verbose_name="Побед над легкими")
+    medium_wins = models.IntegerField(default=0, verbose_name="Побед над нормальными")
+    hard_wins = models.IntegerField(default=0, verbose_name="Побед над сложными")
+    
+    # Очки в шахматах
+    chess_points = models.IntegerField(default=0, verbose_name="Очков в шахматах")
+    
+    # Лучшие достижения
+    fastest_win = models.DurationField(null=True, blank=True, verbose_name="Самая быстрая победа")
+    current_streak = models.IntegerField(default=0, verbose_name="Текущая серия побед")
+    best_streak = models.IntegerField(default=0, verbose_name="Лучшая серия побед")
+    
+    class Meta:
+        verbose_name = "Шахматная статистика"
+        verbose_name_plural = "Шахматная статистика"
+    
+    def __str__(self):
+        return f"Статистика шахмат {self.user.username}"
+    
+    @property
+    def win_rate(self):
+        """Процент побед"""
+        if self.games_played == 0:
+            return 0
+        return round((self.games_won / self.games_played) * 100, 1)
+    
+    def update_stats(self, game):
+        """Обновляет статистику после партии"""
+        self.games_played += 1
+        
+        if game.result == 'draw':
+            self.games_drawn += 1
+            self.current_streak = 0
+        elif (game.result == 'white_win' and game.user_color == 'white') or \
+             (game.result == 'black_win' and game.user_color == 'black'):
+            self.games_won += 1
+            self.current_streak += 1
+            self.best_streak = max(self.best_streak, self.current_streak)
+            
+            # Обновляем победы по сложностям
+            if game.bot_difficulty == 'easy':
+                self.easy_wins += 1
+            elif game.bot_difficulty == 'medium':
+                self.medium_wins += 1
+            elif game.bot_difficulty == 'hard':
+                self.hard_wins += 1
+            
+            # Обновляем самую быструю победу
+            if game.ended_at:
+                duration = game.ended_at - game.started_at
+                if self.fastest_win is None or duration < self.fastest_win:
+                    self.fastest_win = duration
+        else:
+            self.games_lost += 1
+            self.current_streak = 0
+        
+        self.chess_points += game.points_earned
+        self.save()

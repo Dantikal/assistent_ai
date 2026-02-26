@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block title %}Базы данных - Игры{% endblock %}
+
+{% block extra_css %}
+<style>
+    .game-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .game-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .game-header h1 {
+        margin-bottom: 10px;
+        font-size: 2.5rem;
+    }
+
+    .game-header p {
+        margin-bottom: 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .level-selector {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .level-btn {
+        padding: 10px 20px;
+        margin: 5px;
+        border: 2px solid #ddd;
+        border-radius: 25px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .level-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+
+    .level-btn:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .game-content {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .question-box {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        padding: 25px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        border-left: 4px solid #667eea;
+    }
+
+    .question-text {
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #333;
+        line-height: 1.6;
+    }
+
+    .answer-form {
+        display: flex;
+        gap: 15px;
+        align-items: stretch;
+    }
+
+    .answer-input {
+        flex: 1;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .answer-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .submit-btn {
+        padding: 15px 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .new-question-btn {
+        padding: 12px 25px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 15px;
+    }
+
+    .new-question-btn:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .message {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .stats-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .level-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+
+    .level-easy {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .level-normal {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .level-hard {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    @media (max-width: 768px) {
+        .answer-form {
+            flex-direction: column;
+        }
+
+        .submit-btn {
+            width: 100%;
+        }
+
+        .stats-bar {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .game-header h1 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <!-- Заголовок -->
+    <div class="game-header">
+        <h1><i class="fas fa-database me-3"></i>Базы данных</h1>
+        <p>Проверьте свои знания SQL и основ баз данных</p>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">⭐ {{ points }}</div>
+            <div class="stat-label">Очки</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ seen_count }}</div>
+            <div class="stat-label">Вопросов пройдено</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">
+                {{ level|title }}
+                <span class="level-badge level-{{ level }}">{{ level|title }}</span>
+            </div>
+            <div class="stat-label">Сложность</div>
+        </div>
+    </div>
+
+    <!-- Выбор уровня -->
+    <div class="level-selector">
+        <h5 class="mb-3">Выберите уровень сложности:</h5>
+        <div style="text-align: center;">
+            <a href="?level=easy" class="level-btn {% if level == 'easy' %}active{% endif %}">
+                <i class="fas fa-smile me-2"></i>Легкий
+            </a>
+            <a href="?level=normal" class="level-btn {% if level == 'normal' %}active{% endif %}">
+                <i class="fas fa-meh me-2"></i>Средний
+            </a>
+            <a href="?level=hard" class="level-btn {% if level == 'hard' %}active{% endif %}">
+                <i class="fas fa-fire me-2"></i>Сложный
+            </a>
+        </div>
+    </div>
+
+    <!-- Игра -->
+    <div class="game-content">
+        {% if message %}
+            <div class="message {% if result %}success{% else %}error{% endif %}">
+                {{ message }}
+            </div>
+        {% endif %}
+
+        {% if prompt %}
+            <form method="post" class="answer-form">
+                {% csrf_token %}
+                <div style="flex: 1;">
+                    <div class="question-box">
+                        <div class="question-text">{{ prompt }}</div>
+                    </div>
+                    <input type="text" 
+                           name="answer" 
+                           class="answer-input" 
+                           placeholder="Введите ваш ответ здесь..." 
+                           autofocus
+                           required>
+                </div>
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-check me-2"></i>Ответить
+                </button>
+            </form>
+            
+            <form method="post" style="margin-top: 15px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="new">
+                <button type="submit" class="new-question-btn">
+                    <i class="fas fa-sync me-2"></i>Новый вопрос
+                </button>
+            </form>
+        {% else %}
+            <div style="text-align: center; padding: 40px;">
+                <i class="fas fa-database" style="font-size: 48px; color: #667eea; margin-bottom: 20px; display: block;"></i>
+                <h4 class="text-muted">Начните игру!</h4>
+                <p class="text-muted">Нажмите на кнопку ниже, чтобы получить первый вопрос</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="new">
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-play me-2"></i>Начать игру
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Фокус на поле ввода при загрузке страницы
+    const answerInput = document.querySelector('.answer-input');
+    if (answerInput) {
+        answerInput.focus();
+    }
+    
+    // Обработка отправки формы
+    const form = document.querySelector('.answer-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const input = form.querySelector('.answer-input');
+            if (!input.value.trim()) {
+                e.preventDefault();
+                input.focus();
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

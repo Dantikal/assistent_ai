@@ -1,41 +1,83 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}Список лидеров - StudySense{% endblock %}
 
 {% block extra_css %}
 <style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+
     .leaderboard-container {
         max-width: 1200px;
-        margin: 0 auto;
+        margin: 20px auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Анимации для топ-игроков */
+    @keyframes glow {
+        0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4); }
+        50% { box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.6); }
+        100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4); }
+    }
+
+    @keyframes rainbow {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+
+    @keyframes sparkle {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
     }
 
     .rank-medal {
-        display: inline-block;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
         font-weight: bold;
-        font-size: 20px;
+        font-size: 24px;
         color: white;
-        margin-right: 10px;
+        margin-right: 15px;
+        position: relative;
+        transition: all 0.3s ease;
     }
 
     .rank-1 {
         background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-        box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.6);
+        animation: glow 2s ease-in-out infinite, float 3s ease-in-out infinite;
     }
 
     .rank-2 {
         background: linear-gradient(135deg, #C0C0C0 0%, #A9A9A9 100%);
-        box-shadow: 0 5px 15px rgba(192, 192, 192, 0.4);
+        box-shadow: 0 8px 25px rgba(192, 192, 192, 0.5);
+        animation: glow 2.5s ease-in-out infinite;
     }
 
     .rank-3 {
         background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
-        box-shadow: 0 5px 15px rgba(205, 127, 50, 0.4);
+        box-shadow: 0 8px 25px rgba(205, 127, 50, 0.5);
+        animation: glow 3s ease-in-out infinite;
     }
 
     .rank-other {
@@ -43,43 +85,70 @@
         box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
     }
 
+    /* Искры для топ-3 */
+    .sparkle {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: white;
+        border-radius: 50%;
+        animation: sparkle 2s ease-in-out infinite;
+    }
+
+    .sparkle1 { top: 10%; left: 10%; animation-delay: 0s; }
+    .sparkle2 { top: 20%; right: 15%; animation-delay: 0.5s; }
+    .sparkle3 { bottom: 15%; left: 20%; animation-delay: 1s; }
+    .sparkle4 { bottom: 25%; right: 10%; animation-delay: 1.5s; }
+
     .leaderboard-item {
         background: white;
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 10px;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         transition: all 0.3s ease;
-        border-left: 4px solid transparent;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border-left: 5px solid transparent;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
     }
 
     .leaderboard-item:hover {
-        transform: translateX(5px);
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+        transform: translateY(-3px) translateX(5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     }
 
+    /* Особые стили для топ-3 */
     .leaderboard-item.top-1 {
         border-left-color: #FFD700;
-        background: linear-gradient(90deg, rgba(255, 215, 0, 0.05) 0%, white 100%);
+        background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 50%, white 100%);
+        animation: pulse 4s ease-in-out infinite;
     }
 
     .leaderboard-item.top-2 {
         border-left-color: #C0C0C0;
-        background: linear-gradient(90deg, rgba(192, 192, 192, 0.05) 0%, white 100%);
+        background: linear-gradient(90deg, rgba(192, 192, 192, 0.1) 0%, rgba(192, 192, 192, 0.05) 50%, white 100%);
     }
 
     .leaderboard-item.top-3 {
         border-left-color: #CD7F32;
-        background: linear-gradient(90deg, rgba(205, 127, 50, 0.05) 0%, white 100%);
+        background: linear-gradient(90deg, rgba(205, 127, 50, 0.1) 0%, rgba(205, 127, 50, 0.05) 50%, white 100%);
+    }
+
+    /* Сияние для топ-10 */
+    .leaderboard-item.top-elite {
+        border-left-color: #667eea;
+        background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, white 100%);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
     }
 
     .leaderboard-item.current-user {
         border: 2px solid #667eea;
-        border-left: 4px solid #667eea;
-        background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, white 100%);
+        border-left: 5px solid #667eea;
+        background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 50%, white 100%);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
     }
 
     .leader-position {
@@ -96,12 +165,18 @@
     }
 
     .leader-avatar {
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
         object-fit: cover;
         margin-right: 15px;
         border: 3px solid #e0e0e0;
+        transition: all 0.3s ease;
+    }
+
+    .leader-avatar:hover {
+        transform: scale(1.1);
+        border-color: #667eea;
     }
 
     .leader-details {
@@ -109,135 +184,131 @@
     }
 
     .leader-name {
-        font-weight: 600;
-        font-size: 16px;
+        font-weight: 700;
+        font-size: 18px;
         color: #333;
         margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .leader-rank {
-        font-size: 12px;
-        color: #999;
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
     }
 
     .leader-stats {
         display: flex;
-        gap: 20px;
+        gap: 25px;
         align-items: center;
         flex: 0 0 auto;
     }
 
     .stat-box {
         text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-box:hover {
+        transform: translateY(-2px);
     }
 
     .stat-value {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: bold;
         color: #333;
+        margin-bottom: 3px;
     }
 
     .stat-label {
-        font-size: 11px;
+        font-size: 12px;
         color: #999;
         text-transform: uppercase;
-        margin-top: 3px;
+        font-weight: 500;
+    }
+
+    /* Особые стили для значков рангов */
+    .rank-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .rank-gold { background: linear-gradient(135deg, #FFD700, #FFA500); color: white; }
+    .rank-platinum { background: linear-gradient(135deg, #e5e4e2, #c0c0c0); color: #333; }
+    .rank-diamond { background: linear-gradient(135deg, #00d4ff, #0099cc); color: white; }
+    .rank-master { background: linear-gradient(135deg, #9933ff, #6600cc); color: white; }
+    .rank-grandmaster { 
+        background: linear-gradient(135deg, #ff00ff, #00d4ff, #ff0080); 
+        color: white; 
+        animation: rainbow 3s linear infinite;
     }
 
     .filter-container {
         background: white;
-        padding: 20px;
-        border-radius: 12px;
+        padding: 25px;
+        border-radius: 15px;
         margin-bottom: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
 
     .user-position-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 20px;
-        border-radius: 12px;
+        border-radius: 15px;
         margin-bottom: 30px;
-        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
     }
 
-    .position-value {
-        font-size: 36px;
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .page-title {
+        font-size: 2.5rem;
         font-weight: bold;
-        margin-right: 15px;
-    }
-
-    .position-text {
-        font-size: 14px;
-    }
-
-    .position-text strong {
-        font-size: 18px;
-        display: block;
-    }
-
-    .medal-emoji {
-        font-size: 28px;
-    }
-
-    .leaderboard-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 30px;
-        gap: 10px;
-    }
-
-    .leaderboard-header h1 {
-        margin-bottom: 0;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin-bottom: 30px;
     }
 
-    .filter-tabs {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .filter-btn {
-        padding: 8px 16px;
-        border: 2px solid #ddd;
-        border-radius: 20px;
-        background: white;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-weight: 500;
-    }
-
-    .filter-btn.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-color: #667eea;
-    }
-
-    .filter-btn:hover {
-        border-color: #667eea;
-    }
-
+    /* Адаптивность */
     @media (max-width: 768px) {
+        .leaderboard-container {
+            margin: 10px;
+            padding: 20px;
+        }
+        
         .leaderboard-item {
             flex-direction: column;
-            align-items: flex-start;
+            text-align: center;
             gap: 15px;
         }
-
-        .leader-position {
-            width: 100%;
-        }
-
-        .leader-stats {
-            width: 100%;
-            justify-content: space-between;
-        }
-
+        
         .leader-info {
-            width: 100%;
+            margin: 0;
+        }
+        
+        .leader-stats {
+            gap: 15px;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+        }
+        
+        .page-title {
+            font-size: 2rem;
         }
     }
 </style>
@@ -245,152 +316,179 @@
 
 {% block content %}
 <div class="leaderboard-container">
-    <!-- Заголовок -->
-    <div class="leaderboard-header">
-        <i class="fas fa-trophy" style="font-size: 32px; color: #FFD700;"></i>
-        <h1>🏆 Список лидеров</h1>
-    </div>
-
-    <!-- Фильтр по предметам -->
-    <div class="filter-container">
-        <h5 class="mb-3">Выберите предмет:</h5>
-        <div class="filter-tabs">
-            <a href="?subject=all" class="filter-btn {% if current_subject == 'all' %}active{% endif %}">
-                <i class="fas fa-star me-2"></i>Общий рейтинг
-            </a>
-            {% for subject in subjects %}
-                <a href="?subject={{ subject.id }}" class="filter-btn {% if current_subject|stringformat:'s' == subject.id|stringformat:'s' %}active{% endif %}">
-                    {{ subject.name }}
-                </a>
-            {% endfor %}
-        </div>
-    </div>
+    <h1 class="page-title">
+        <i class="fas fa-trophy me-3"></i>🏆 Список лидеров
+    </h1>
 
     <!-- Позиция текущего пользователя -->
     {% if user_position %}
-        <div class="user-position-card">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center;">
-                    <div class="position-value">
-                        {% if user_position == 1 %}🥇{% elif user_position == 2 %}🥈{% elif user_position == 3 %}🥉{% else %}#{% endif %}
-                    </div>
-                    <div style="flex: 1;">
-                        <div class="position-text">
-                            Ваша позиция: <strong>{{ user_position }} место</strong>
-                        </div>
-                        <div style="font-size: 12px; margin-top: 5px;">
-                            Очков: <strong>{{ user_points }}</strong>
-                        </div>
-                    </div>
+    <div class="user-position-card">
+        <h3 class="mb-3">
+            <i class="fas fa-user me-2"></i>Ваша позиция:
+        </h3>
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <div style="font-size: 2rem; font-weight: bold;">
+                    #{{ user_position }} место
                 </div>
-                {% if user_position <= 10 %}
-                    <div style="font-size: 24px;">🎉</div>
-                {% endif %}
+            </div>
+            <div class="col-md-4">
+                <div style="font-size: 1.2rem;">
+                    <i class="fas fa-star me-2"></i>Очков: {{ user_points|default:0 }}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="font-size: 1rem;">
+                    🎉 {% if user_position <= 3 %}Вы в топ-3!{% elif user_position <= 10 %}Вы в топ-10!{% else %}Продолжайте в том же духе!{% endif %}
+                </div>
             </div>
         </div>
+    </div>
     {% endif %}
 
+    <!-- Фильтр по предметам -->
+    <div class="filter-container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Выберите предмет:
+                </h5>
+            </div>
+            <div class="col-md-6">
+                <form method="GET" class="d-flex gap-2">
+                    <select name="subject" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if current_subject == 'all' %}selected{% endif %}>Общий рейтинг</option>
+                        {% for subject in subjects %}
+                            <option value="{{ subject.id }}" {% if current_subject == subject.id|stringformat:"s" %}selected{% endif %}>
+                                {{ subject.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Список лидеров -->
-    <div>
+    <div class="leaders-list">
         {% for leader in leaders %}
-            <div class="leaderboard-item {% if leader.place == 1 %}top-1{% elif leader.place == 2 %}top-2{% elif leader.place == 3 %}top-3{% endif %}">
-                <!-- Позиция и медаль -->
+            {% with rank_class=leader.profile.get_rank_class %}
+            {% with place_class=leader.place|slugify %}
+            <div class="leaderboard-item 
+                {% if leader.place == 1 %}top-1{% endif %}
+                {% if leader.place == 2 %}top-2{% endif %}
+                {% if leader.place == 3 %}top-3{% endif %}
+                {% if leader.place <= 10 and leader.place > 3 %}top-elite{% endif %}
+                {% if leader.profile.user == request.user %}current-user{% endif %}">
+                
                 <div class="leader-position">
-                    {% if leader.place == 1 %}
-                        <div class="rank-medal rank-1">🥇</div>
-                    {% elif leader.place == 2 %}
-                        <div class="rank-medal rank-2">🥈</div>
-                    {% elif leader.place == 3 %}
-                        <div class="rank-medal rank-3">🥉</div>
-                    {% else %}
-                        <div class="rank-medal rank-other">#{{ leader.place }}</div>
-                    {% endif %}
+                    <div class="rank-medal 
+                        {% if leader.place == 1 %}rank-1{% elif leader.place == 2 %}rank-2{% elif leader.place == 3 %}rank-3{% else %}rank-other{% endif %}">
+                        
+                        <!-- Искры для топ-3 -->
+                        {% if leader.place <= 3 %}
+                            <div class="sparkle sparkle1"></div>
+                            <div class="sparkle sparkle2"></div>
+                            <div class="sparkle sparkle3"></div>
+                            <div class="sparkle sparkle4"></div>
+                        {% endif %}
+                        
+                        {% if leader.place == 1 %}🥇{% elif leader.place == 2 %}🥈{% elif leader.place == 3 %}🥉{% else %}{{ leader.place }}{% endif %}
+                    </div>
                 </div>
 
-                <!-- Информация о лидере -->
                 <div class="leader-info">
                     {% if leader.profile.avatar %}
                         <img src="{{ leader.profile.avatar.url }}" alt="avatar" class="leader-avatar">
                     {% else %}
-                        <div class="leader-avatar" style="background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                        <div class="leader-avatar" style="display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
                             <i class="fas fa-user" style="font-size: 24px; color: #ccc;"></i>
                         </div>
                     {% endif %}
+                    
                     <div class="leader-details">
                         <div class="leader-name">
                             {{ leader.profile.user.username }}
+                            
+                            <!-- Значок ранга -->
                             {% if leader.rank %}
-                                <span style="margin-left: 10px; font-size: 14px;">{{ leader.rank.emoji }} {{ leader.rank.name }}</span>
+                                <span class="rank-badge rank-{{ rank_class|replace:'rank-:' }}">
+                                    {{ leader.rank.emoji }} {{ leader.rank.name }}
+                                </span>
+                            {% endif %}
+                            
+                            <!-- Значок топ-игрока -->
+                            {% if leader.place <= 10 %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-crown me-1"></i>Топ-{{ leader.place }}
+                                </span>
                             {% endif %}
                         </div>
                         <div class="leader-rank">
-                            {{ leader.rank_name }}
+                            {% if leader.rank %}
+                                {{ leader.rank.emoji }} {{ leader.rank.name }}
+                            {% else %}
+                                🥉 IRON (Железо)
+                            {% endif %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Статистика -->
                 <div class="leader-stats">
                     <div class="stat-box">
-                        <div class="stat-value" style="color: #FFD700;">⭐ {{ leader.points }}</div>
+                        <div class="stat-value">
+                            <i class="fas fa-star me-1"></i>{{ leader.points|default:0 }}
+                        </div>
                         <div class="stat-label">Очки</div>
                     </div>
+                    
                     <div class="stat-box">
-                        <div class="stat-value" style="color: #4CAF50;">✅ {{ leader.profile.correct_answers }}</div>
+                        <div class="stat-value">
+                            <i class="fas fa-check me-1"></i>{{ leader.correct_answers|default:0 }}
+                        </div>
                         <div class="stat-label">Правильных</div>
                     </div>
+                    
                     <div class="stat-box">
-                        <div class="stat-value" style="color: #f44336;">❌ {{ leader.profile.wrong_answers }}</div>
+                        <div class="stat-value">
+                            <i class="fas fa-times me-1"></i>{{ leader.wrong_answers|default:0 }}
+                        </div>
                         <div class="stat-label">Неправильных</div>
                     </div>
+                    
                     <div class="stat-box">
-                        <div class="stat-value" style="color: #2196F3;">🎯 {{ leader.accuracy }}%</div>
+                        <div class="stat-value">
+                            <i class="fas fa-bullseye me-1"></i>{{ leader.accuracy|default:0 }}%
+                        </div>
                         <div class="stat-label">Точность</div>
                     </div>
                 </div>
             </div>
+            {% endwith %}
+            {% endwith %}
         {% empty %}
-            <div style="text-align: center; padding: 40px 20px;">
-                <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; margin-bottom: 20px; display: block;"></i>
-                <h4 class="text-muted">Лидеры не найдены</h4>
-                <p class="text-muted">Пока нет данных для отображения. Начните учиться и собирайте очки!</p>
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Пока нет участников</h4>
+                <p class="text-muted">Станьте первым в списке лидеров!</p>
             </div>
         {% endfor %}
     </div>
 
     <!-- Информация о системе рангов -->
-    {% if current_subject == 'all' %}
-        <div style="margin-top: 50px; padding: 30px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px;">
-            <h5 style="margin-bottom: 20px; color: #667eea;">
-                <i class="fas fa-info-circle me-2"></i>О системе рангов
-            </h5>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
-                <div>
-                    <strong>🥉 IRON:</strong> 0-500 очков
-                </div>
-                <div>
-                    <strong>🥈 BRONZE:</strong> 500-2K очков
-                </div>
-                <div>
-                    <strong>🥉 SILVER:</strong> 2K-5K очков
-                </div>
-                <div>
-                    <strong>🥈 GOLD:</strong> 5K-10K очков
-                </div>
-                <div>
-                    <strong>🥇 PLATINUM:</strong> 10K-25K очков
-                </div>
-                <div>
-                    <strong>🥇 DIAMOND:</strong> 25K-50K очков
-                </div>
-                <div>
-                    <strong>👑 MASTER:</strong> 50K-100K очков
-                </div>
-                <div>
-                    <strong>👑 GRANDMASTER:</strong> 100K+ очков
-                </div>
-            </div>
+    <div class="mt-5 text-center">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle me-2"></i>О системе рангов</h5>
+            <p class="mb-2">
+                🥇 <strong>Gold:</strong> 5,000 - 10,000 очков | 
+                🥈 <strong>Platinum:</strong> 10,000 - 25,000 очков | 
+                💎 <strong>Diamond:</strong> 25,000 - 50,000 очков
+            </p>
+            <p class="mb-0">
+                🎓 <strong>Master:</strong> 50,000 - 100,000 очков | 
+                👑 <strong>Grandmaster:</strong> 100,000+ очков
+            </p>
         </div>
-    {% endif %}
+    </div>
 </div>
 {% endblock %}

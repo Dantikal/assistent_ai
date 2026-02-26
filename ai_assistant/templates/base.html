@@ -306,6 +306,23 @@
             }
         }
 
+        /* Скрываем основную навигацию на десктопе */
+        @media (min-width: 769px) {
+            .navbar-nav {
+                display: none !important;
+            }
+            
+            /* Скрываем dropdown пользователя */
+            .navbar .dropdown {
+                display: none !important;
+            }
+            
+            /* Уменьшаем navbar чтобы не мешал */
+            .navbar {
+                padding: 0.5rem 0;
+            }
+        }
+
         /* Скелетон загрузки */
         .skeleton {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -336,23 +353,26 @@
             border-radius: 5px;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
 
-        /* Микро-взаимодействия */
-        .fa-robot, .fa-gamepad, .fa-book, .fa-calendar, .fa-home, .fa-trophy {
-            transition: all 0.3s ease;
-        }
+/* Микро-взаимодействия */
+.fa-robot, .fa-gamepad, .fa-book, .fa-calendar, .fa-home, .fa-trophy {
+    transition: all 0.3s ease;
+}
 
-        .nav-link:hover .fa-robot {
-            transform: rotate(10deg) scale(1.2);
-        }
+.nav-link:hover .fa-robot {
+    transform: rotate(10deg) scale(1.2);
+}
 
-        .nav-link:hover .fa-gamepad {
-            transform: scale(1.2) rotate(-10deg);
-        }
+.nav-link:hover .fa-gamepad {
+    transform: rotate(-10deg) scale(1.2);
+}
 
+.nav-link:hover .fa-book {
+    transform: scale(1.1);
+}
         .nav-link:hover .fa-book {
             transform: translateY(-3px);
         }
@@ -380,10 +400,255 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
+
+        /* Плавающая кнопка быстрого доступа */
+        .quick-access-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: none;
+        }
+
+        .quick-access-fab:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .quick-access-menu {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            min-width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .quick-access-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .quick-access-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #2d3436;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+        }
+
+        .quick-access-item:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .quick-access-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .quick-access-item i {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        .quick-access-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Скрытая навигация */
+        .main-nav-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            z-index: 2000; /* Повышаем z-index */
+            border: none;
+        }
+
+        .main-nav-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .main-nav-menu {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            min-width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+            z-index: 1999; /* Высокий z-index */
+        }
+
+        .main-nav-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .main-nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #2d3436;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .main-nav-item:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .main-nav-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .main-nav-item i {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+            .quick-access-fab {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            .quick-access-menu {
+                bottom: 80px;
+                right: 20px;
+                min-width: 250px;
+                padding: 15px;
+            }
+
+            .main-nav-toggle {
+                top: 15px;
+                left: 15px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .main-nav-menu {
+                top: 65px;
+                left: 15px;
+                min-width: 200px;
+                padding: 15px;
+            }
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Кнопка скрытой навигации -->
+    <button class="main-nav-toggle" id="mainNavToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Скрытое меню навигации -->
+    <div class="main-nav-menu" id="mainNavMenu">
+        <div class="quick-access-title mb-3">
+            <i class="fas fa-compass me-2"></i>Навигация
+        </div>
+        <a href="{% url 'dashboard' %}" class="main-nav-item">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </a>
+        <a href="{% url 'schedule' %}" class="main-nav-item">
+            <i class="fas fa-calendar"></i>
+            <span>Расписание</span>
+        </a>
+        <a href="{% url 'knowledge_cards' %}" class="main-nav-item">
+            <i class="fas fa-book"></i>
+            <span>Карточки знаний</span>
+        </a>
+        <a href="{% url 'ai_chat' %}" class="main-nav-item">
+            <i class="fas fa-robot"></i>
+            <span>AI-ассистент</span>
+        </a>
+        <a href="{% url 'chess_home' %}" class="main-nav-item">
+            <i class="fas fa-chess"></i>
+            <span>Шахматы</span>
+        </a>
+        <a href="{% url 'games' %}" class="main-nav-item">
+            <i class="fas fa-gamepad"></i>
+            <span>Игры</span>
+        </a>
+        <a href="{% url 'task_tracker' %}" class="main-nav-item">
+            <i class="fas fa-tasks"></i>
+            <span>Задачи</span>
+        </a>
+        <a href="{% url 'leaderboard' %}" class="main-nav-item">
+            <i class="fas fa-trophy"></i>
+            <span>Лидеры</span>
+        </a>
+        <a href="{% url 'profile' %}" class="main-nav-item">
+            <i class="fas fa-user"></i>
+            <span>Профиль</span>
+        </a>
+        <a href="/admin/" class="main-nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Админ панель</span>
+        </a>
+        <a href="/logout/" class="main-nav-item text-danger">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Выход</span>
+        </a>
+    </div>
+
     <!-- Навигация -->
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
@@ -416,8 +681,18 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'chess_home' %}">
+                            <i class="fas fa-chess me-1"></i>Шахматы
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'games' %}">
                             <i class="fas fa-gamepad me-1"></i>Игры
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'task_tracker' %}">
+                            <i class="fas fa-tasks me-1"></i>Задачи
                         </a>
                     </li>
                     <li class="nav-item">
@@ -480,6 +755,53 @@
         </div>
     </footer>
 
+    <!-- Плавающая кнопка быстрого доступа -->
+    <button class="quick-access-fab" id="quickAccessFab">
+        <i class="fas fa-th"></i>
+    </button>
+
+    <div class="quick-access-menu" id="quickAccessMenu">
+        <div class="quick-access-title mb-3">
+            <i class="fas fa-rocket me-2"></i>Быстрый доступ
+        </div>
+        <a href="{% url 'dashboard' %}" class="quick-access-item">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </a>
+        <a href="{% url 'schedule' %}" class="quick-access-item">
+            <i class="fas fa-calendar"></i>
+            <span>Расписание</span>
+        </a>
+        <a href="{% url 'knowledge_cards' %}" class="quick-access-item">
+            <i class="fas fa-book"></i>
+            <span>Карточки знаний</span>
+        </a>
+        <a href="{% url 'ai_chat' %}" class="quick-access-item">
+            <i class="fas fa-robot"></i>
+            <span>AI-ассистент</span>
+        </a>
+        <a href="{% url 'chess_home' %}" class="quick-access-item">
+            <i class="fas fa-chess"></i>
+            <span>Шахматы</span>
+        </a>
+        <a href="{% url 'games' %}" class="quick-access-item">
+            <i class="fas fa-gamepad"></i>
+            <span>Игры</span>
+        </a>
+        <a href="{% url 'task_tracker' %}" class="quick-access-item">
+            <i class="fas fa-tasks"></i>
+            <span>Задачи</span>
+        </a>
+        <a href="{% url 'leaderboard' %}" class="quick-access-item">
+            <i class="fas fa-trophy"></i>
+            <span>Лидеры</span>
+        </a>
+        <a href="{% url 'profile' %}" class="quick-access-item">
+            <i class="fas fa-user"></i>
+            <span>Профиль</span>
+        </a>
+    </div>
+
     <!-- Скрипты -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -525,6 +847,69 @@
                     setTimeout(() => alert.remove(), 500);
                 });
             }, 5000);
+
+            // Скрытая навигация
+            const mainNavToggle = document.getElementById('mainNavToggle');
+            const mainNavMenu = document.getElementById('mainNavMenu');
+            
+            if (mainNavToggle && mainNavMenu) {
+                mainNavToggle.addEventListener('click', function() {
+                    mainNavMenu.classList.toggle('show');
+                    // Меняем иконку
+                    const icon = mainNavToggle.querySelector('i');
+                    if (mainNavMenu.classList.contains('show')) {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    } else {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+
+                // Закрытие меню при клике вне его
+                document.addEventListener('click', function(e) {
+                    if (!mainNavToggle.contains(e.target) && !mainNavMenu.contains(e.target)) {
+                        mainNavMenu.classList.remove('show');
+                        const icon = mainNavToggle.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+
+                // Закрытие меню при выборе пункта
+                document.querySelectorAll('.main-nav-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        mainNavMenu.classList.remove('show');
+                        const icon = mainNavToggle.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    });
+                });
+            }
+
+            // Плавающая кнопка быстрого доступа
+            const quickAccessFab = document.getElementById('quickAccessFab');
+            const quickAccessMenu = document.getElementById('quickAccessMenu');
+            
+            if (quickAccessFab && quickAccessMenu) {
+                quickAccessFab.addEventListener('click', function() {
+                    quickAccessMenu.classList.toggle('show');
+                });
+
+                // Закрытие меню при клике вне его
+                document.addEventListener('click', function(e) {
+                    if (!quickAccessFab.contains(e.target) && !quickAccessMenu.contains(e.target)) {
+                        quickAccessMenu.classList.remove('show');
+                    }
+                });
+
+                // Закрытие меню при выборе пункта
+                document.querySelectorAll('.quick-access-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        quickAccessMenu.classList.remove('show');
+                    });
+                });
+            }
         });
 
         // Добавляем класс для активной ссылки

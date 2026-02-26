@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+
+{% block title %}Шахматы - StudySense{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        min-height: 100vh;
+    }
+
+    .chess-container {
+        max-width: 1200px;
+        margin: 20px auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .chess-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .chess-title {
+        font-size: 3rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .chess-subtitle {
+        color: #666;
+        font-size: 1.2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+    }
+
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .action-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 1.1rem;
+        font-weight: 600;
+        box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(40, 167, 69, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .action-btn.secondary {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        box-shadow: 0 10px 25px rgba(23, 162, 184, 0.3);
+    }
+
+    .action-btn.secondary:hover {
+        box-shadow: 0 15px 35px rgba(23, 162, 184, 0.4);
+    }
+
+    .recent-games {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .recent-games h3 {
+        color: #333;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .game-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+
+    .game-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .game-info {
+        flex: 1;
+    }
+
+    .game-result {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .result-win {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .result-draw {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+    }
+
+    .result-loss {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+
+    .result-playing {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .difficulty-badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .diff-easy { background: #d4edda; color: #155724; }
+    .diff-medium { background: #fff3cd; color: #856404; }
+    .diff-hard { background: #f8d7da; color: #721c24; }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .chess-container {
+            margin: 10px;
+            padding: 20px;
+        }
+        
+        .chess-title {
+            font-size: 2rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chess-container">
+    <div class="chess-header">
+        <h1 class="chess-title">
+            <i class="fas fa-chess"></i>
+            ♟️ Шахматы
+            <i class="fas fa-chess"></i>
+        </h1>
+        <p class="chess-subtitle">Сыграйте с AI разного уровня сложности и заработайте очки!</p>
+    </div>
+
+    <!-- Статистика -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-value">{{ stats.chess_points }}</div>
+            <div class="stat-label">Очков в шахматах</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">🎮</div>
+            <div class="stat-value">{{ stats.games_played }}</div>
+            <div class="stat-label">Сыграно партий</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">🏅</div>
+            <div class="stat-value">{{ stats.win_rate }}%</div>
+            <div class="stat-label">Процент побед</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-value">{{ stats.current_streak }}</div>
+            <div class="stat-label">Текущая серия</div>
+        </div>
+    </div>
+
+    <!-- Кнопки действий -->
+    <div class="action-buttons">
+        <a href="{% url 'chess_new_game' %}" class="action-btn">
+            <i class="fas fa-plus-circle fa-2x"></i>
+            <span>Новая игра</span>
+            <small>Выберите сложность и цвет</small>
+        </a>
+        
+        <a href="{% url 'chess_stats' %}" class="action-btn secondary">
+            <i class="fas fa-chart-bar fa-2x"></i>
+            <span>Статистика</span>
+            <small>Подробная статистика игр</small>
+        </a>
+    </div>
+
+    <!-- Последние игры -->
+    <div class="recent-games">
+        <h3>
+            <i class="fas fa-history"></i>
+            Последние партии
+        </h3>
+        
+        {% if recent_games %}
+            {% for game in recent_games %}
+            <div class="game-item">
+                <div class="game-info">
+                    <div style="font-weight: 600; margin-bottom: 5px;">
+                        {{ game.get_bot_difficulty_display }} • {{ game.get_user_color_display }}
+                    </div>
+                    <div style="color: #666; font-size: 0.9rem;">
+                        {{ game.started_at|date:"d.m.Y H:i" }}
+                        {% if game.ended_at %}
+                            • Длительность: {{ game.ended_at|timeuntil:game.started_at }}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    {% if game.result != 'playing' %}
+                        <span class="difficulty-badge diff-{{ game.bot_difficulty }}">
+                            {{ game.get_bot_difficulty_display }}
+                        </span>
+                    {% endif %}
+                    
+                    <span class="game-result 
+                        {% if game.result == 'white_win' and game.user_color == 'white' %}result-win
+                        {% elif game.result == 'black_win' and game.user_color == 'black' %}result-win
+                        {% elif game.result == 'draw' %}result-draw
+                        {% elif game.result == 'playing' %}result-playing
+                        {% else %}result-loss{% endif %}">
+                        {% if game.result == 'playing' %}
+                            Игра идет
+                        {% elif game.result == 'draw' %}
+                            Ничья
+                        {% elif game.result == 'white_win' %}
+                            {% if game.user_color == 'white' %}Победа{% else %}Поражение{% endif %}
+                        {% elif game.result == 'black_win' %}
+                            {% if game.user_color == 'black' %}Победа{% else %}Поражение{% endif %}
+                        {% endif %}
+                    </span>
+                    
+                    {% if game.result != 'playing' and game.points_earned > 0 %}
+                        <span style="font-weight: 600; color: #28a745;">
+                            +{{ game.points_earned }} ⭐
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-chess-board"></i>
+                <h4>Пока нет сыгранных партий</h4>
+                <p>Начните свою первую партию прямо сейчас!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Информация об очках -->
+    <div class="mt-4">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle me-2"></i>Как начисляются очки:</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>🎯 Легкий бот:</strong> 10 очков за победу
+                </div>
+                <div class="col-md-4">
+                    <strong>⚡ Нормальный бот:</strong> 25 очков за победу
+                </div>
+                <div class="col-md-4">
+                    <strong>🔥 Сложный бот:</strong> 50 очков за победу
+                </div>
+            </div>
+            <p class="mb-0 mt-2">
+                <small>💡 Бонусы: +50% за победу менее чем за минуту, +20% за победу менее чем за 5 минут</small>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

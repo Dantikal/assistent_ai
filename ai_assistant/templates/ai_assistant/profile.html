@@ -1,80 +1,138 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}Профиль - StudySense{% endblock %}
 
 {% block extra_css %}
 <style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+
+    .main-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        margin: 20px auto;
+        padding: 30px;
+        max-width: 1200px;
+    }
+
+    /* Анимация сияния для топ-игроков */
+    @keyframes glow {
+        0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4); }
+        50% { box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.6); }
+        100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4); }
+    }
+
+    @keyframes rainbow {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @keyframes sparkle {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 1; }
+    }
+
+    .profile-header {
+        text-align: center;
+        margin-bottom: 40px;
+        position: relative;
+    }
+
+    .profile-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+    }
+
     .avatar-container {
         position: relative;
-        width: 100px;
-        height: 100px;
+        width: 150px;
+        height: 150px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0 auto 20px;
+        transition: all 0.3s ease;
     }
 
-    /* IRON (Железо) - серый */
+    .avatar-container:hover {
+        transform: scale(1.05);
+    }
+
+    /* Эффекты для рангов */
     .rank-iron {
-        border: 4px solid #a0a0a0;
+        border: 5px solid #a0a0a0;
         background: linear-gradient(135deg, #d3d3d3 0%, #a0a0a0 100%);
-        box-shadow: 0 0 15px rgba(160, 160, 160, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 20px rgba(160, 160, 160, 0.5);
     }
 
-    /* BRONZE (Бронза) - коричневый */
     .rank-bronze {
-        border: 4px solid #cd7f32;
+        border: 5px solid #cd7f32;
         background: linear-gradient(135deg, #e8b86f 0%, #cd7f32 100%);
-        box-shadow: 0 0 20px rgba(205, 127, 50, 0.6), inset 0 0 10px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 0 25px rgba(205, 127, 50, 0.6);
     }
 
-    /* SILVER (Серебро) - серебристый */
     .rank-silver {
-        border: 4px solid #c0c0c0;
+        border: 5px solid #c0c0c0;
         background: linear-gradient(135deg, #f0f0f0 0%, #c0c0c0 100%);
-        box-shadow: 0 0 25px rgba(192, 192, 192, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3);
+        box-shadow: 0 0 30px rgba(192, 192, 192, 0.8);
     }
 
-    /* GOLD (Золото) - золотой */
     .rank-gold {
-        border: 4px solid #ffd700;
+        border: 5px solid #ffd700;
         background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
-        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.3);
+        box-shadow: 0 0 35px rgba(255, 215, 0, 0.8);
+        animation: glow 2s ease-in-out infinite;
     }
 
-    /* PLATINUM (Платина) - серебристо-голубой */
     .rank-platinum {
-        border: 4px solid #e5e4e2;
+        border: 5px solid #e5e4e2;
         background: linear-gradient(135deg, #f8f8f8 0%, #e5e4e2 100%);
-        box-shadow: 0 0 35px rgba(229, 228, 226, 1), 0 0 50px rgba(100, 200, 255, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.5);
+        box-shadow: 0 0 40px rgba(229, 228, 226, 1), 0 0 60px rgba(100, 200, 255, 0.4);
+        animation: glow 2.5s ease-in-out infinite;
     }
 
-    /* DIAMOND (Алмаз) - голубой */
     .rank-diamond {
-        border: 4px solid #00d4ff;
+        border: 5px solid #00d4ff;
         background: linear-gradient(135deg, #87ceeb 0%, #00d4ff 100%);
-        box-shadow: 0 0 40px rgba(0, 212, 255, 0.8), 0 0 60px rgba(0, 212, 255, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 45px rgba(0, 212, 255, 0.8), 0 0 70px rgba(0, 212, 255, 0.4);
+        animation: glow 1.8s ease-in-out infinite;
     }
 
-    /* MASTER (Мастер) - фиолетовый */
     .rank-master {
-        border: 4px solid #9933ff;
+        border: 5px solid #9933ff;
         background: linear-gradient(135deg, #da70d6 0%, #9933ff 100%);
-        box-shadow: 0 0 40px rgba(153, 51, 255, 0.8), 0 0 60px rgba(218, 112, 214, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.2);
+        box-shadow: 0 0 50px rgba(153, 51, 255, 0.8), 0 0 80px rgba(218, 112, 214, 0.4);
+        animation: glow 1.5s ease-in-out infinite;
     }
 
-    /* GRANDMASTER - радужный */
     .rank-grandmaster {
-        border: 4px solid #ff00ff;
+        border: 5px solid #ff00ff;
         background: linear-gradient(135deg, #ff0080 0%, #ff00ff 50%, #00d4ff 100%);
-        box-shadow: 0 0 50px rgba(255, 0, 255, 0.8), 0 0 70px rgba(255, 0, 128, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.3);
+        box-shadow: 0 0 60px rgba(255, 0, 255, 0.8), 0 0 90px rgba(255, 0, 128, 0.4);
+        animation: glow 1s ease-in-out infinite, rainbow 3s linear infinite;
     }
 
     .avatar-image {
-        width: 90px;
-        height: 90px;
+        width: 130px;
+        height: 130px;
         border-radius: 50%;
         object-fit: cover;
+        border: 3px solid white;
     }
 
     .rank-badge {
@@ -83,239 +141,520 @@
         right: -5px;
         background: white;
         border-radius: 50%;
-        padding: 5px;
-        font-size: 24px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        padding: 8px;
+        font-size: 30px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        animation: float 3s ease-in-out infinite;
     }
 
+    /* Искры для топ-рангов */
+    .sparkle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: white;
+        border-radius: 50%;
+        animation: sparkle 2s ease-in-out infinite;
+    }
+
+    .sparkle1 { top: 10%; left: 10%; animation-delay: 0s; }
+    .sparkle2 { top: 20%; right: 15%; animation-delay: 0.5s; }
+    .sparkle3 { bottom: 15%; left: 20%; animation-delay: 1s; }
+    .sparkle4 { bottom: 25%; right: 10%; animation-delay: 1.5s; }
+
     .rank-info {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 15px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 25px;
+        border-radius: 15px;
+        margin: 20px 0;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .rank-info::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transform: rotate(45deg);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
     }
 
     .rank-progress-bar {
-        margin-top: 10px;
-        height: 25px;
+        margin-top: 15px;
+        height: 30px;
         background: #e0e0e0;
-        border-radius: 5px;
+        border-radius: 15px;
         overflow: hidden;
+        position: relative;
     }
 
     .rank-progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+        background: linear-gradient(90deg, #4CAF50 0%, #45a049 50%, #4CAF50 100%);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 12px;
+        font-size: 14px;
         font-weight: bold;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .rank-progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: progress-shine 2s ease-in-out infinite;
+    }
+
+    @keyframes progress-shine {
+        0% { left: -100%; }
+        100% { left: 100%; }
     }
 
     .stats-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 10px;
-        margin-top: 15px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
     }
 
     .stat-item {
         background: white;
-        padding: 12px;
-        border-radius: 8px;
+        padding: 20px;
+        border-radius: 15px;
         text-align: center;
-        border-left: 4px solid #007bff;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-item.top-player {
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        animation: glow 3s ease-in-out infinite;
     }
 
     .stat-value {
-        font-size: 20px;
+        font-size: 28px;
         font-weight: bold;
         color: #333;
+        margin-bottom: 5px;
     }
 
     .stat-label {
-        font-size: 12px;
+        font-size: 14px;
         color: #666;
-        margin-top: 5px;
+    }
+
+    .achievement-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .achievement-card:hover {
+        transform: translateX(10px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .achievement-icon {
+        font-size: 24px;
+        margin-right: 15px;
+    }
+
+    .points-display {
+        font-size: 3rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #ffd700 0%, #ff6b6b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin: 20px 0;
+        animation: float 4s ease-in-out infinite;
+    }
+
+    .leaderboard-position {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ffd700 100%);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        display: inline-block;
+        margin: 10px 0;
+        animation: glow 2s ease-in-out infinite;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0 !important;
+        border: none;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .main-container {
+            margin: 10px;
+            padding: 20px;
+        }
+        
+        .profile-title {
+            font-size: 2rem;
+        }
+        
+        .avatar-container {
+            width: 120px;
+            height: 120px;
+        }
+        
+        .avatar-image {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Левая колонка: Профиль и аватар -->
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">🎯 Профиль</h5>
+<div class="main-container">
+    <!-- Заголовок профиля -->
+    <div class="profile-header">
+        <h1 class="profile-title">
+            <i class="fas fa-user-circle me-2"></i>Профиль студента
+        </h1>
+        {% if user.profile.is_top_player %}
+            <div class="leaderboard-position">
+                <i class="fas fa-trophy me-2"></i>Топ игрок #{{ user.profile.leaderboard_position }}
             </div>
-            <div class="card-body">
-                {% if saved %}
-                    <div class="alert alert-success" role="alert">✅ Аватар обновлён</div>
-                {% endif %}
+        {% endif %}
+    </div>
 
-                <!-- Аватар с рамкой ранга -->
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <div class="avatar-container rank-{{ user.profile.get_rank_class }} me-3" style="display: inline-block; position: relative;">
-                        {% if profile.avatar %}
-                            <img src="{{ profile.avatar.url }}" alt="avatar" class="avatar-image">
-                        {% else %}
-                            <div style="width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
-                                <i class="fas fa-user" style="font-size: 40px; color: #ccc;"></i>
-                            </div>
-                        {% endif %}
-                        {% if user.profile.get_rank %}
-                            <div class="rank-badge">{{ user.profile.get_rank.emoji }}</div>
-                        {% endif %}
-                    </div>
+    <div class="row">
+        <!-- Левая колонка: Профиль и аватар -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>Личная информация
+                    </h5>
                 </div>
+                <div class="card-body">
+                    {% if saved %}
+                        <div class="alert alert-success" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>Аватар успешно обновлён!
+                        </div>
+                    {% endif %}
 
-                <!-- Информация о пользователе -->
-                <div class="mb-3">
-                    <h6><strong>{{ user.username }}</strong></h6>
-                    <p class="text-muted" style="margin-bottom: 5px;">📧 {{ user.email }}</p>
-                </div>
-
-                <!-- Ранг и прогресс -->
-                <div class="rank-info">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                        <h6 style="margin: 0; color: #333;">
-                            {% if user.profile.get_rank %}
-                                {{ user.profile.get_rank.emoji }} {{ user.profile.get_rank.name }}
-                            {% else %}
-                                Без ранга
+                    <!-- Аватар с эффектами ранга -->
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div class="avatar-container rank-{{ user.profile.get_rank_class }}" 
+                             style="display: inline-block; position: relative;">
+                            
+                            <!-- Искры для топ-рангов -->
+                            {% if user.profile.get_rank_class in 'gold platinum diamond master grandmaster' %}
+                                <div class="sparkle sparkle1"></div>
+                                <div class="sparkle sparkle2"></div>
+                                <div class="sparkle sparkle3"></div>
+                                <div class="sparkle sparkle4"></div>
                             {% endif %}
-                        </h6>
-                        <span style="font-size: 18px; font-weight: bold; color: #ffd700;">⭐ {{ profile.points }}</span>
-                    </div>
-                    
-                    <!-- Прогресс к следующему рангу -->
-                    {% if user.profile.get_next_rank %}
-                        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
-                            До следующего ранга: <strong>{{ user.profile.get_points_to_next_rank }}</strong> очков
+                            
+                            {% if profile.avatar %}
+                                <img src="{{ profile.avatar.url }}" alt="avatar" class="avatar-image">
+                            {% else %}
+                                <div style="width: 130px; height: 130px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0f0f0;">
+                                    <i class="fas fa-user" style="font-size: 50px; color: #ccc;"></i>
+                                </div>
+                            {% endif %}
+                            
+                            {% if user.profile.get_rank %}
+                                <div class="rank-badge">{{ user.profile.get_rank.emoji }}</div>
+                            {% endif %}
                         </div>
-                        <div class="rank-progress-bar">
-                            <div class="rank-progress-fill" style="width: {{ user.profile.get_progress_percentage }}%;">
-                                {{ user.profile.get_progress_percentage }}%
+                    </div>
+
+                    <!-- Информация о пользователе -->
+                    <div class="mb-4 text-center">
+                        <h4><strong>{{ user.username }}</strong></h4>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-envelope me-2"></i>{{ user.email }}
+                        </p>
+                    </div>
+
+                    <!-- Отображение очков -->
+                    <div class="points-display">
+                        <i class="fas fa-star me-2"></i>{{ profile.points }}
+                        <div style="font-size: 1rem; color: #666;">очков опыта</div>
+                    </div>
+
+                    <!-- Ранг и прогресс -->
+                    <div class="rank-info">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                            <h6 style="margin: 0; color: #333; font-size: 1.2rem;">
+                                {% if user.profile.get_rank %}
+                                    {{ user.profile.get_rank.emoji }} {{ user.profile.get_rank.name }}
+                                {% else %}
+                                    <i class="fas fa-user-graduate me-2"></i>Без ранга
+                                {% endif %}
+                            </h6>
+                            {% if user.profile.get_next_rank %}
+                                <span style="font-size: 14px; color: #666;">
+                                    Следующий: {{ user.profile.get_next_rank.emoji }} {{ user.profile.get_next_rank.name }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Прогресс к следующему рангу -->
+                        {% if user.profile.get_next_rank %}
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                                До следующего ранга: <strong>{{ user.profile.get_points_to_next_rank }}</strong> очков
+                            </div>
+                            <div class="rank-progress-bar">
+                                <div class="rank-progress-fill" style="width: {{ user.profile.get_progress_percentage }}%;">
+                                    {{ user.profile.get_progress_percentage }}%
+                                </div>
+                            </div>
+                        {% else %}
+                            <div style="font-size: 14px; color: #28a745; padding: 15px; text-align: center; background: #d4edda; border-radius: 10px; border: 1px solid #c3e6cb;">
+                                <i class="fas fa-crown me-2"></i><strong>Максимальный ранг достигнут!</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Статистика -->
+                    <div class="stats-grid">
+                        <div class="stat-item {% if profile.correct_answers > 100 %}top-player{% endif %}">
+                            <div class="stat-value">{{ profile.correct_answers }}</div>
+                            <div class="stat-label">
+                                <i class="fas fa-check-circle me-1"></i>Правильных
                             </div>
                         </div>
-                    {% else %}
-                        <div style="font-size: 12px; color: #666; padding: 10px; text-align: center; background: #e8f5e9; border-radius: 5px;">
-                            👑 Максимальный ранг достигнут!
+                        <div class="stat-item">
+                            <div class="stat-value">{{ profile.wrong_answers }}</div>
+                            <div class="stat-label">
+                                <i class="fas fa-times-circle me-1"></i>Неправильных
+                            </div>
+                        </div>
+                        <div class="stat-item {% if accuracy >= 80 %}top-player{% endif %}">
+                            <div class="stat-value">
+                                {% if profile.correct_answers|add:profile.wrong_answers > 0 %}
+                                    {{ accuracy }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </div>
+                            <div class="stat-label">
+                                <i class="fas fa-bullseye me-1"></i>Точность
+                            </div>
+                        </div>
+                        {% if user.profile.leaderboard_position %}
+                        <div class="stat-item top-player">
+                            <div class="stat-value">#{{ user.profile.leaderboard_position }}</div>
+                            <div class="stat-label">
+                                <i class="fas fa-trophy me-1"></i>Рейтинг
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Форма обновления аватара -->
+                    <hr class="my-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-camera me-2"></i>Изменить аватар
+                            </label>
+                            {{ form.avatar }}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-upload me-2"></i>Загрузить аватар
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка: Достижения и активность -->
+        <div class="col-lg-6">
+            <!-- Достижения -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy me-2"></i>Достижения
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if profile.correct_answers >= 100 %}
+                        <div class="achievement-card">
+                            <div class="d-flex align-items-center">
+                                <span class="achievement-icon">🎯</span>
+                                <div>
+                                    <strong>Меткий стрелок</strong>
+                                    <div class="text-muted small">100 правильных ответов</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if profile.points >= 500 %}
+                        <div class="achievement-card">
+                            <div class="d-flex align-items-center">
+                                <span class="achievement-icon">⭐</span>
+                                <div>
+                                    <strong>Опытный студент</strong>
+                                    <div class="text-muted small">500 очков опыта</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if accuracy >= 80 %}
+                        <div class="achievement-card">
+                            <div class="d-flex align-items-center">
+                                <span class="achievement-icon">🎖️</span>
+                                <div>
+                                    <strong>Мастер точности</strong>
+                                    <div class="text-muted small">80%+ правильных ответов</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if user.profile.get_rank_class in 'platinum diamond master grandmaster' %}
+                        <div class="achievement-card">
+                            <div class="d-flex align-items-center">
+                                <span class="achievement-icon">👑</span>
+                                <div>
+                                    <strong>Элита системы</strong>
+                                    <div class="text-muted small">Высокий ранг достижений</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if not profile.correct_answers >= 100 and not profile.points >= 500 and not accuracy >= 80 %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-lock fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Продолжайте учиться, чтобы разблокировать достижения!</p>
                         </div>
                     {% endif %}
                 </div>
+            </div>
 
-                <!-- Статистика -->
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value">{{ profile.correct_answers }}</div>
-                        <div class="stat-label">✅ Правильных</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">{{ profile.wrong_answers }}</div>
-                        <div class="stat-label">❌ Неправильных</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">
-                            {% if profile.correct_answers|add:profile.wrong_answers > 0 %}
-                                {{ accuracy }}%
-                            {% else %}
-                                0%
-                            {% endif %}
+            <!-- Предметы и очки -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-book me-2"></i>Прогресс по предметам
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if subject_scores %}
+                        {% for score in subject_scores %}
+                            {% with total_answers=score.correct_answers|add:score.wrong_answers %}
+                            {% with percentage=score.correct_answers|percentage:total_answers %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>{{ score.subject.name }}</strong>
+                                    <span class="badge bg-primary">{{ score.points }} очков</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {% if total_answers > 0 %}{{ percentage|floatformat:0 }}{% else %}0{% endif %}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ score.correct_answers }} правильных, {{ score.wrong_answers }} неправильных
+                                </small>
+                            </div>
+                            {% endwith %}
+                            {% endwith %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-graduation-cap fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Начните изучать предметы, чтобы увидеть прогресс!</p>
                         </div>
-                        <div class="stat-label">🎯 Точность</div>
-                    </div>
+                    {% endif %}
                 </div>
-
-                <!-- Форма обновления аватара -->
-                <hr class="my-4">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label">📷 Изменить аватар</label>
-                        {{ form.avatar }}
-                        {% if form.avatar.errors %}
-                            <div class="text-danger small mt-1">{{ form.avatar.errors }}</div>
-                        {% endif %}
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">💾 Сохранить аватар</button>
-                </form>
             </div>
-        </div>
-    </div>
 
-    <!-- Правая колонка: Система рангов -->
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">📊 Система рангов</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">Достигайте новые ранги, набирая очки за правильные ответы!</p>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <!-- IRON -->
-                    <div style="padding: 12px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #a0a0a0;">
-                        <div style="font-size: 24px;">🥉</div>
-                        <div style="font-weight: bold; font-size: 14px;">IRON</div>
-                        <div style="font-size: 12px; color: #666;">0 - 500 очков</div>
-                    </div>
-
-                    <!-- BRONZE -->
-                    <div style="padding: 12px; background: #fef3f0; border-radius: 8px; border-left: 4px solid #cd7f32;">
-                        <div style="font-size: 24px;">🥈</div>
-                        <div style="font-weight: bold; font-size: 14px;">BRONZE</div>
-                        <div style="font-size: 12px; color: #666;">500 - 2,000</div>
-                    </div>
-
-                    <!-- SILVER -->
-                    <div style="padding: 12px; background: #f0f0f5; border-radius: 8px; border-left: 4px solid #c0c0c0;">
-                        <div style="font-size: 24px;">🥉</div>
-                        <div style="font-weight: bold; font-size: 14px;">SILVER</div>
-                        <div style="font-size: 12px; color: #666;">2,000 - 5,000</div>
-                    </div>
-
-                    <!-- GOLD -->
-                    <div style="padding: 12px; background: #fffef0; border-radius: 8px; border-left: 4px solid #ffd700;">
-                        <div style="font-size: 24px;">🥈</div>
-                        <div style="font-weight: bold; font-size: 14px;">GOLD</div>
-                        <div style="font-size: 12px; color: #666;">5,000 - 10,000</div>
-                    </div>
-
-                    <!-- PLATINUM -->
-                    <div style="padding: 12px; background: #f8f8f8; border-radius: 8px; border-left: 4px solid #e5e4e2;">
-                        <div style="font-size: 24px;">🥇</div>
-                        <div style="font-weight: bold; font-size: 14px;">PLATINUM</div>
-                        <div style="font-size: 12px; color: #666;">10,000 - 25,000</div>
-                    </div>
-
-                    <!-- DIAMOND -->
-                    <div style="padding: 12px; background: #e0f7ff; border-radius: 8px; border-left: 4px solid #00d4ff;">
-                        <div style="font-size: 24px;">🥇</div>
-                        <div style="font-weight: bold; font-size: 14px;">DIAMOND</div>
-                        <div style="font-size: 12px; color: #666;">25,000 - 50,000</div>
-                    </div>
-
-                    <!-- MASTER -->
-                    <div style="padding: 12px; background: #f3e5ff; border-radius: 8px; border-left: 4px solid #9933ff;">
-                        <div style="font-size: 24px;">👑</div>
-                        <div style="font-weight: bold; font-size: 14px;">MASTER</div>
-                        <div style="font-size: 12px; color: #666;">50,000 - 100,000</div>
-                    </div>
-
-                    <!-- GRANDMASTER -->
-                    <div style="padding: 12px; background: linear-gradient(135deg, #ffe0ff 0%, #e0f7ff 100%); border-radius: 8px; border-left: 4px solid #ff00ff;">
-                        <div style="font-size: 24px;">👑</div>
-                        <div style="font-weight: bold; font-size: 14px;">GRANDMASTER</div>
-                        <div style="font-size: 12px; color: #666;">100,000+</div>
-                    </div>
+            <!-- Быстрые действия -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Быстрые действия
+                    </h5>
                 </div>
-
-                <div style="margin-top: 15px; padding: 12px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
-                    <strong>💡 Совет:</strong> Каждый правильный ответ дает вам очки! Достигайте новые ранги и получайте экскlusивные рамки для аватара.
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'knowledge_cards' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-book-open me-2"></i>Изучать карточки
+                        </a>
+                        <a href="{% url 'ai_chat' %}" class="btn btn-outline-success">
+                            <i class="fas fa-robot me-2"></i>Спросить AI
+                        </a>
+                        <a href="{% url 'leaderboard' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-trophy me-2"></i>Таблица лидеров
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-info">
+                            <i class="fas fa-home me-2"></i>Главная панель
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

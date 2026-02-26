@@ -1,0 +1,1348 @@
+{% extends 'base.html' %}
+
+{% block title %}Трекер задач - StudySense{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tracker-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .tracker-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .category-progress {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .category-progress:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .category-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .category-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        color: white;
+        font-size: 18px;
+    }
+
+    .category-info {
+        flex: 1;
+    }
+
+    .category-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 3px;
+    }
+
+    .category-stats {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 12px;
+        background: #f0f0f0;
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.6s ease;
+        position: relative;
+    }
+
+    .progress-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+        animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    .chart-container {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .chart-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+        text-align: center;
+    }
+
+    .bar-chart {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .bar-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .bar-label {
+        min-width: 180px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #555;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .category-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 2px;
+    }
+
+    .category-stats-small {
+        font-size: 0.8rem;
+        color: #777;
+    }
+
+    .bar-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .bar-wrapper {
+        flex: 1;
+        height: 28px;
+        background: #f5f5f5;
+        border-radius: 14px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .bar-fill {
+        height: 100%;
+        border-radius: 14px;
+        transition: width 0.8s ease;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 12px;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 600;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .bar-text {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        font-weight: 700;
+    }
+
+    .chart-legend {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    .legend-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 12px;
+        font-size: 1rem;
+    }
+
+    .legend-items {
+        display: flex;
+        gap: 25px;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .legend-item i {
+        color: #667eea;
+        width: 16px;
+    }
+
+    /* Круговая диаграмма */
+    .pie-chart-container {
+        display: flex;
+        align-items: center;
+        gap: 40px;
+        padding: 20px 0;
+    }
+
+    .pie-chart-wrapper {
+        position: relative;
+        width: 300px;
+        height: 300px;
+        flex-shrink: 0;
+    }
+
+    #pieChart {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+    }
+
+    .pie-center-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .pie-total {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #333;
+        line-height: 1;
+    }
+
+    .pie-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 4px;
+    }
+
+    .pie-legend {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .pie-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background-color 0.2s ease;
+    }
+
+    .pie-legend-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .legend-info {
+        flex: 1;
+    }
+
+    .legend-name {
+        font-weight: 600;
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .legend-stats {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 2px;
+    }
+
+    .legend-percentage {
+        font-weight: 700;
+        color: #333;
+        font-size: 1rem;
+        min-width: 45px;
+        text-align: right;
+    }
+
+    /* Анализ приоритетов */
+    .priority-category {
+        background-color: #fff3cd;
+        border-left: 3px solid #ffc107;
+    }
+
+    .priority-star {
+        color: #ffc107;
+        margin-left: 8px;
+        font-size: 0.9rem;
+    }
+
+    .priority-analysis {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .priority-card {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 4px solid;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .priority-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+
+    .high-priority {
+        background: linear-gradient(135deg, #ff6b6b15 0%, #ff6b6b05 100%);
+        border-left-color: #ff6b6b;
+    }
+
+    .medium-priority {
+        background: linear-gradient(135deg, #ffd93d15 0%, #ffd93d05 100%);
+        border-left-color: #ffd93d;
+    }
+
+    .low-priority {
+        background: linear-gradient(135deg, #6bcf7f15 0%, #6bcf7f05 100%);
+        border-left-color: #6bcf7f;
+    }
+
+    .priority-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .priority-content {
+        flex: 1;
+    }
+
+    .priority-title {
+        font-weight: 700;
+        color: #333;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+    }
+
+    .priority-description {
+        color: #666;
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+    }
+
+    .priority-stats {
+        color: #888;
+        font-size: 0.85rem;
+    }
+
+    .priority-percentage {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #333;
+        min-width: 60px;
+        text-align: right;
+    }
+
+    .no-priorities {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+        font-size: 1rem;
+    }
+
+    .no-priorities i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        display: block;
+        opacity: 0.5;
+    }
+
+    .bar-fill::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+        animation: barShimmer 3s infinite;
+    }
+
+    @keyframes barShimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+
+    .bar-value {
+        min-width: 45px;
+        text-align: right;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .category-percentage {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+
+    .add-task-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 30px;
+    }
+
+    .add-task-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .task-list {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .task-item {
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        transition: background-color 0.3s ease;
+    }
+
+    .task-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .task-item:last-child {
+        border-bottom: none;
+    }
+
+    .task-item.completed {
+        background-color: rgba(76, 175, 80, 0.05);
+    }
+
+    .task-checkbox {
+        width: 24px;
+        height: 24px;
+        border: 2px solid #ddd;
+        border-radius: 50%;
+        margin-right: 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .task-checkbox.checked {
+        background: #4CAF50;
+        border-color: #4CAF50;
+        color: white;
+    }
+
+    .task-content {
+        flex: 1;
+    }
+
+    .task-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .task-item.completed .task-title {
+        text-decoration: line-through;
+        color: #999;
+    }
+
+    .task-description {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .task-meta {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-size: 0.85rem;
+        color: #999;
+    }
+
+    .task-category {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: white;
+    }
+
+    .task-deadline {
+        color: #f44336;
+    }
+
+    .task-deadline.overdue {
+        font-weight: 600;
+    }
+
+    .task-points {
+        background: #FFD700;
+        color: #333;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .task-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .task-action-btn {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .delete-btn {
+        background: #ffebee;
+        color: #f44336;
+    }
+
+    .delete-btn:hover {
+        background: #f44336;
+        color: white;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 500px;
+        width: 90%;
+    }
+
+    .modal-header {
+        margin-bottom: 20px;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: white;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 20px;
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .pie-chart-container {
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .pie-chart-wrapper {
+            width: 250px;
+            height: 250px;
+        }
+        
+        .pie-total {
+            font-size: 2rem;
+        }
+        
+        .priority-card {
+            flex-direction: column;
+            text-align: center;
+            padding: 15px;
+        }
+        
+        .priority-icon {
+            align-self: center;
+        }
+        
+        .priority-percentage {
+            align-self: center;
+            font-size: 1.2rem;
+        }
+        
+        .bar-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+        
+        .bar-label {
+            min-width: auto;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        
+        .bar-wrapper {
+            order: 3;
+        }
+        
+        .bar-value {
+            text-align: center;
+            order: 2;
+            font-weight: 700;
+        }
+        
+        .legend-items {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .legend-item {
+            justify-content: space-between;
+        }
+    }
+
+        .task-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .task-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tracker-container">
+    <!-- Заголовок -->
+    <div class="tracker-header">
+        <h1><i class="fas fa-tasks me-3"></i>Трекер задач</h1>
+        <p>Организуйте свои задачи и отслеживайте прогресс</p>
+    </div>
+
+    <!-- Общая статистика -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_tasks }}</div>
+            <div class="stat-label">Всего задач</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ completed_tasks }}</div>
+            <div class="stat-label">Выполнено</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ overall_percentage }}%</div>
+            <div class="stat-label">Общий прогресс</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ request.user.profile.points }}</div>
+            <div class="stat-label">Баллов всего</div>
+        </div>
+    </div>
+
+    <!-- Круговая диаграмма -->
+    {% if category_stats %}
+        <div class="chart-container">
+            <div class="chart-title">
+                <i class="fas fa-chart-pie me-2"></i>Распределение задач по категориям
+            </div>
+            <div class="pie-chart-container">
+                <div class="pie-chart-wrapper">
+                    <canvas id="pieChart" width="300" height="300"></canvas>
+                    <div class="pie-center-text">
+                        <div class="pie-total">{{ total_tasks }}</div>
+                        <div class="pie-label">Всего задач</div>
+                    </div>
+                </div>
+                <div class="pie-legend">
+                    {% for stat in category_stats.values %}
+                        <div class="pie-legend-item {% if stat.percentage >= 30 %}priority-category{% endif %}">
+                            <div class="legend-color" data-category-color="{{ stat.category.color }}"></div>
+                            <div class="legend-info">
+                                <div class="legend-name">
+                                    {{ stat.category.name }}
+                                    {% if stat.percentage >= 30 %}
+                                        <i class="fas fa-star priority-star" title="Основная категория"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="legend-stats">{{ stat.total }} задач ({{ stat.percentage }}%)</div>
+                            </div>
+                            <div class="legend-percentage">{{ stat.percentage }}%</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Анализ приоритетов пользователя -->
+        {% if category_stats %}
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i class="fas fa-brain me-2"></i>Анализ ваших приоритетов
+                </div>
+                <div class="priority-analysis">
+                    {% for stat in category_stats.values %}
+                        {% if stat.percentage >= 25 %}
+                            <div class="priority-card {% if stat.percentage >= 40 %}high-priority{% elif stat.percentage >= 30 %}medium-priority{% else %}low-priority{% endif %}">
+                                <div class="priority-icon" data-category-color="{{ stat.category.color }}">
+                                    <i class="{{ stat.category.icon }}"></i>
+                                </div>
+                                <div class="priority-content">
+                                    <div class="priority-title">{{ stat.category.name }}</div>
+                                    <div class="priority-description">
+                                        {% if stat.percentage >= 40 %}
+                                            Ваш главный фокус! {{ stat.percentage }}% всех задач
+                                        {% elif stat.percentage >= 30 %}
+                                            Важная область: {{ stat.percentage }}% задач
+                                        {% else %}
+                                            Значимая категория: {{ stat.percentage }}% задач
+                                        {% endif %}
+                                    </div>
+                                    <div class="priority-stats">
+                                        {{ stat.total }} задач • {{ stat.completed }} выполнено
+                                    </div>
+                                </div>
+                                <div class="priority-percentage">{{ stat.percentage }}%</div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if category_stats.values|length == 0 %}
+                        <div class="no-priorities">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Начните добавлять задачи, чтобы увидеть анализ приоритетов</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Единая диаграмма всех категорий -->
+        <div class="chart-container">
+            <div class="chart-title">
+                <i class="fas fa-chart-bar me-2"></i>Выполнение задач по всем категориям
+            </div>
+            <div class="bar-chart">
+                {% for stat in category_stats.values %}
+                    <div class="bar-item" data-category-color="{{ stat.category.color }}">
+                        <div class="bar-label">
+                            <div class="bar-icon" data-category-color="{{ stat.category.color }}">
+                                <i class="{{ stat.category.icon }}"></i>
+                            </div>
+                            <div>
+                                <div class="category-name">{{ stat.category.name }}</div>
+                                <div class="category-stats-small">{{ stat.completed }}/{{ stat.total }} задач • {{ stat.points }} баллов</div>
+                            </div>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill" data-width="{{ stat.percentage }}" data-gradient-start="{{ stat.category.color }}" data-gradient-end="{{ stat.category.color }}dd">
+                                <span class="bar-text">{{ stat.percentage }}%</span>
+                            </div>
+                        </div>
+                        <div class="bar-value">{{ stat.percentage }}%</div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Легенда диаграммы -->
+            <div class="chart-legend">
+                <div class="legend-title">Общая статистика:</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <i class="fas fa-tasks"></i>
+                        <span>Всего задач: {{ total_tasks }}</span>
+                    </div>
+                    <div class="legend-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Выполнено: {{ completed_tasks }}</span>
+                    </div>
+                    <div class="legend-item">
+                        <i class="fas fa-percentage"></i>
+                        <span>Общий прогресс: {{ overall_percentage }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Детальная статистика по категориям -->
+        <div class="row">
+            {% for stat in category_stats.values %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="category-progress">
+                        <div class="category-header">
+                            <div class="category-icon" data-category-color="{{ stat.category.color }}">
+                                <i class="{{ stat.category.icon }}"></i>
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">{{ stat.category.name }}</div>
+                                <div class="category-stats">{{ stat.completed }} из {{ stat.total }} выполнено • {{ stat.points }} баллов</div>
+                            </div>
+                            <div class="category-percentage" data-category-color="{{ stat.category.color }}">
+                                {{ stat.percentage }}%
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" data-width="{{ stat.percentage }}" data-category-color="{{ stat.category.color }}"></div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Кнопка добавления задачи -->
+    <button class="add-task-btn" onclick="openModal()">
+        <i class="fas fa-plus me-2"></i>Добавить задачу
+    </button>
+
+    <!-- Список задач -->
+    <div class="task-list">
+        {% if tasks %}
+            {% for task in tasks %}
+                <div class="task-item {% if task.is_completed %}completed{% endif %}" data-task-id="{{ task.id }}">
+                    <div class="task-checkbox {% if task.is_completed %}checked{% endif %}" onclick="toggleTask({{ task.id }})">
+                        {% if task.is_completed %}<i class="fas fa-check"></i>{% endif %}
+                    </div>
+                    
+                    <div class="task-content">
+                        <div class="task-title">{{ task.title }}</div>
+                        {% if task.description %}
+                            <div class="task-description">{{ task.description }}</div>
+                        {% endif %}
+                        <div class="task-meta">
+                            <span class="task-category" style="background-color: {{ task.category.color }};">
+                                <i class="{{ task.category.icon }} me-1"></i>{{ task.category.name }}
+                            </span>
+                            {% if task.deadline %}
+                                <span class="task-deadline {% if task.deadline < now %}overdue{% endif %}">
+                                    <i class="fas fa-clock me-1"></i>{{ task.deadline|date:"d.m.Y H:i" }}
+                                </span>
+                            {% endif %}
+                            <span class="task-points">+{{ task.points }} балл{{ task.points|pluralize:"ов,а,ов" }}</span>
+                            {% if task.completed_at %}
+                                <span><i class="fas fa-check-circle me-1"></i>{{ task.completed_at|date:"d.m.Y" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="task-actions">
+                        <button class="task-action-btn delete-btn" onclick="deleteTask({{ task.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <h4>Задач пока нет</h4>
+                <p>Создайте свою первую задачу, чтобы начать отслеживать прогресс</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно создания задачи -->
+<div id="taskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Новая задача</h3>
+        </div>
+        
+        <form id="taskForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Категория *</label>
+                <select name="category" class="form-select" required>
+                    <option value="">Выберите категорию</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Заголовок задачи *</label>
+                <input type="text" name="title" class="form-control" required placeholder="Например: Сходить на занятие">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Описание</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Дополнительные детали..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Дедлайн (необязательно)</label>
+                <input type="datetime-local" name="deadline" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Баллы за выполнение</label>
+                <input type="number" name="points" class="form-control" value="1" min="1" max="10">
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+                <button type="submit" class="btn btn-primary">Создать задачу</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal() {
+    document.getElementById('taskModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('taskModal').style.display = 'none';
+    document.getElementById('taskForm').reset();
+}
+
+function toggleTask(taskId) {
+    fetch('', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `action=toggle&task_id=${taskId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function deleteTask(taskId) {
+    if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
+        fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `action=delete&task_id=${taskId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+// Анимация графиков при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Рисуем круговую диаграмму
+    drawPieChart();
+    
+    // Устанавливаем цвета для всех элементов с data-category-color
+    const coloredElements = document.querySelectorAll('[data-category-color]');
+    coloredElements.forEach(element => {
+        const color = element.dataset.categoryColor;
+        if (color) {
+            if (element.classList.contains('category-icon') || element.classList.contains('priority-icon')) {
+                element.style.backgroundColor = color;
+                element.style.color = 'white';
+            } else if (element.classList.contains('category-percentage')) {
+                element.style.color = color;
+            }
+        }
+    });
+    
+    // Устанавливаем градиенты для bar-fill элементов
+    const barFills = document.querySelectorAll('.bar-fill[data-gradient-start]');
+    barFills.forEach(bar => {
+        const startColor = bar.dataset.gradientStart;
+        const endColor = bar.dataset.gradientEnd;
+        if (startColor && endColor) {
+            bar.style.background = `linear-gradient(90deg, ${startColor} 0%, ${endColor} 100%)`;
+        }
+    });
+    
+    // Устанавливаем градиенты для progress-fill элементов
+    const progressFills = document.querySelectorAll('.progress-fill[data-category-color]');
+    progressFills.forEach(bar => {
+        const color = bar.dataset.categoryColor;
+        if (color) {
+            bar.style.background = `linear-gradient(90deg, ${color} 0%, ${color}dd 100%)`;
+        }
+    });
+    
+    // Анимируем horizontal bar charts
+    const allBarFills = document.querySelectorAll('.bar-fill[data-width]');
+    
+    // Сначала устанавливаем нулевую ширину
+    allBarFills.forEach(bar => {
+        const targetWidth = bar.dataset.width + '%';
+        bar.style.width = '0%';
+        bar.dataset.targetWidth = targetWidth;
+    });
+    
+    // Запускаем анимацию с небольшой задержкой
+    setTimeout(() => {
+        allBarFills.forEach((bar, index) => {
+            setTimeout(() => {
+                bar.style.width = bar.dataset.targetWidth;
+            }, index * 100); // Последовательная анимация
+        });
+    }, 300);
+    
+    // Анимируем progress bars в карточках категорий
+    const allProgressFills = document.querySelectorAll('.progress-fill[data-width]');
+    allProgressFills.forEach(bar => {
+        const targetWidth = bar.dataset.width + '%';
+        bar.style.width = '0%';
+        bar.dataset.targetWidth = targetWidth;
+    });
+    
+    setTimeout(() => {
+        allProgressFills.forEach((bar, index) => {
+            setTimeout(() => {
+                bar.style.width = bar.dataset.targetWidth;
+            }, index * 50);
+        });
+    }, 800);
+});
+
+function drawPieChart() {
+    const canvas = document.getElementById('pieChart');
+    if (!canvas) {
+        console.log('Canvas не найден');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 100;
+    
+    // Устанавливаем цвета для legend-color элементов
+    const legendColors = document.querySelectorAll('.legend-color[data-category-color]');
+    legendColors.forEach(element => {
+        const color = element.dataset.categoryColor;
+        if (color) {
+            element.style.backgroundColor = color;
+        }
+    });
+    
+    // Получаем данные из легенды
+    const legendItems = document.querySelectorAll('.pie-legend-item');
+    console.log('Найдено legend items:', legendItems.length);
+    
+    if (legendItems.length === 0) {
+        // Если нет данных, рисуем пустую диаграмму
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fill();
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        return;
+    }
+    
+    const data = [];
+    
+    legendItems.forEach(item => {
+        const percentageText = item.querySelector('.legend-percentage').textContent;
+        const percentage = parseFloat(percentageText);
+        const color = item.querySelector('.legend-color').style.backgroundColor;
+        
+        data.push({ percentage, color });
+        console.log('Сегмент:', percentage, color);
+    });
+    
+    // Рисуем круговую диаграмму
+    let currentAngle = -Math.PI / 2; // Начинаем сверху
+    
+    data.forEach((segment, index) => {
+        const sliceAngle = (segment.percentage / 100) * 2 * Math.PI;
+        
+        // Рисуем сегмент
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+        ctx.lineTo(centerX, centerY);
+        ctx.fillStyle = segment.color || '#ccc';
+        ctx.fill();
+        
+        // Добавляем границу между сегментами
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        currentAngle += sliceAngle;
+    });
+    
+    // Добавляем внутреннюю тень для 3D эффекта
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius - 10, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fill();
+    
+    // Добавляем внешнюю тень для глубины
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 5;
+    
+    console.log('Диаграмма нарисована');
+}
+
+// Добавляем интерактивность к графикам
+document.addEventListener('DOMContentLoaded', function() {
+    const barItems = document.querySelectorAll('.bar-item');
+    
+    barItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+
+// Обработка формы создания задачи
+document.getElementById('taskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    formData.append('action', 'create');
+    
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal();
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    });
+});
+
+// Закрытие модального окна при клике вне его
+window.onclick = function(event) {
+    const modal = document.getElementById('taskModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
+{% endblock %}
