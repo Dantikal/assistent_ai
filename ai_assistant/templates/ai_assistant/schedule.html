@@ -2,7 +2,105 @@
 
 {% block title %}Расписание - StudySense{% endblock %}
 
+{% block extra_css %}
+<style>
+.task-completion {
+    transition: all 0.3s ease;
+}
+
+.task-completion.completed {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    border-color: #28a745;
+}
+
+.task-completion.completed .card-title {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.stats-item {
+    text-align: center;
+    padding: 10px;
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.progress-ring {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+}
+
+.progress-ring-circle {
+    transition: stroke-dashoffset 0.35s;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+
+.checkbox-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.task-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #28a745;
+    font-size: 16px;
+    margin: 5px;
+}
+
+.task-checkbox:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Статистика выполнения задач -->
+<div class="stats-card" id="taskStats">
+    <div class="row">
+        <div class="col-md-3 stats-item">
+            <span class="stats-number" id="totalTasks">0</span>
+            <div class="stats-label">Всего задач</div>
+        </div>
+        <div class="col-md-3 stats-item">
+            <span class="stats-number" id="completedTasks">0</span>
+            <div class="stats-label">Выполнено</div>
+        </div>
+        <div class="col-md-3 stats-item">
+            <span class="stats-number" id="completionRate">0%</span>
+            <div class="stats-label">Выполнение</div>
+        </div>
+        <div class="col-md-3 stats-item">
+            <div>
+                <span class="stats-number" id="todayTasks">0</span>
+                <div class="stats-label">Сегодня</div>
+                <small id="todayCompleted">0 выполнено</small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>
         <i class="fas fa-calendar-alt me-2"></i>Расписание на неделю
@@ -74,9 +172,15 @@
                                 <span class="badge bg-success">{{ d.personal_schedules|length }}</span>
                             </div>
                             {% for row in d.personal_schedules %}
-                                <div class="schedule-card card mb-2 border-success">
+                                <div class="schedule-card card mb-2 border-success task-completion" data-task-id="{{ row.obj.id }}">
                                     <div class="card-body">
                                         <div class="row align-items-center">
+                                            <div class="col-md-1 d-flex align-items-center justify-content-center">
+                                                <input type="checkbox" 
+                                                       class="task-checkbox form-check-input" 
+                                                       data-task-id="{{ row.obj.id }}"
+                                                       {% if row.is_completed %}checked{% endif %}>
+                                            </div>
                                             <div class="col-md-3">
                                                 <h6 class="text-success mb-1">
                                                     <i class="fas fa-clock me-1"></i>{{ row.obj.start_time }} - {{ row.obj.end_time }}
@@ -86,8 +190,13 @@
                                                         <i class="fas fa-map-marker-alt me-1"></i>{{ row.obj.room }}
                                                     </span>
                                                 {% endif %}
+                                                {% if row.is_completed %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Выполнено
+                                                    </span>
+                                                {% endif %}
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-5">
                                                 <h5 class="card-title mb-1">{{ row.obj.title }}</h5>
                                                 {% if row.obj.notes %}
                                                     <p class="card-text text-muted mb-2">{{ row.obj.notes }}</p>
@@ -96,9 +205,21 @@
                                                 {% if row.notes %}
                                                     <div class="mt-2">
                                                         {% for n in row.notes %}
-                                                            <div class="small border rounded p-2 mb-2">
-                                                                <div class="d-flex justify-content-between">
-                                                                    <strong>{{ n.title }}</strong>
+                                                            <!-- DEBUG PERSONAL: {{ n.title }} ID: {{ n.id }} is_completed: {{ n.is_completed }} -->
+                                                            <div class="small border rounded p-2 mb-2 task-note {% if n.is_completed %}bg-success bg-opacity-10{% endif %}" data-note-id="{{ n.id }}">
+                                                                <div class="d-flex justify-content-between align-items-start">
+                                                                    <div class="d-flex align-items-center flex-grow-1">
+                                                                        <input type="checkbox" 
+                                                                               class="note-checkbox form-check-input me-2" 
+                                                                               data-note-id="{{ n.id }}"
+                                                                               {% if n.is_completed %}checked{% endif %}>
+                                                                        <div class="{% if n.is_completed %}text-decoration-line-through opacity-75{% endif %}">
+                                                                            <strong>{{ n.title }}</strong>
+                                                                            {% if n.description %}
+                                                                                <div class="text-muted">{{ n.description }}</div>
+                                                                            {% endif %}
+                                                                        </div>
+                                                                    </div>
                                                                     <form method="post" style="display:inline;">
                                                                         {% csrf_token %}
                                                                         <input type="hidden" name="action" value="delete_note">
@@ -106,9 +227,6 @@
                                                                         <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
                                                                     </form>
                                                                 </div>
-                                                                {% if n.description %}
-                                                                    <div class="text-muted">{{ n.description }}</div>
-                                                                {% endif %}
                                                             </div>
                                                         {% endfor %}
                                                     </div>
@@ -162,9 +280,21 @@
                                             {% if row.notes %}
                                                 <div class="mt-2">
                                                     {% for n in row.notes %}
-                                                        <div class="small border rounded p-2 mb-2">
-                                                            <div class="d-flex justify-content-between">
-                                                                <strong>{{ n.title }}</strong>
+                                                        <!-- DEBUG: {{ n.title }} ID: {{ n.id }} is_completed: {{ n.is_completed }} -->
+                                                        <div class="small border rounded p-2 mb-2 task-note {% if n.is_completed %}bg-success bg-opacity-10{% endif %}" data-note-id="{{ n.id }}">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <div class="d-flex align-items-center flex-grow-1">
+                                                                    <input type="checkbox" 
+                                                                           class="note-checkbox form-check-input me-2" 
+                                                                           data-note-id="{{ n.id }}"
+                                                                           {% if n.is_completed %}checked{% endif %}>
+                                                                    <div class="{% if n.is_completed %}text-decoration-line-through opacity-75{% endif %}">
+                                                                        <strong>{{ n.title }}</strong>
+                                                                        {% if n.description %}
+                                                                            <div class="text-muted">{{ n.description }}</div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
                                                                 <form method="post" style="display:inline;">
                                                                     {% csrf_token %}
                                                                     <input type="hidden" name="action" value="delete_note">
@@ -172,9 +302,6 @@
                                                                     <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
                                                                 </form>
                                                             </div>
-                                                            {% if n.description %}
-                                                                <div class="text-muted">{{ n.description }}</div>
-                                                            {% endif %}
                                                         </div>
                                                     {% endfor %}
                                                 </div>
@@ -242,6 +369,242 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('Schedule page loaded');
+    
+    // Загрузка статистики при загрузке страницы
+    console.log('Loading task stats...');
+    loadTaskStats();
+    
+    // Обработка кликов по галочкам задач
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('task-checkbox')) {
+            console.log('Task checkbox clicked:', e.target.dataset.taskId, e.target.checked);
+            const taskId = e.target.dataset.taskId;
+            const isChecked = e.target.checked;
+            
+            toggleTaskCompletion(taskId, isChecked);
+        } else if (e.target.classList.contains('note-checkbox')) {
+            console.log('Note checkbox clicked:', e.target.dataset.noteId, e.target.checked);
+            const noteId = e.target.dataset.noteId;
+            const isChecked = e.target.checked;
+            
+            toggleNoteCompletion(noteId, isChecked);
+        }
+    });
+    
+    // Функция переключения выполнения задачи
+    function toggleTaskCompletion(taskId, isCompleted) {
+        console.log('Toggling task:', taskId, isCompleted);
+        fetch(`/tasks/${taskId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                // Обновляем визуальное состояние
+                const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+                const checkbox = document.querySelector(`.task-checkbox[data-task-id="${taskId}"]`);
+                
+                console.log('Task card found:', !!taskCard);
+                
+                if (taskCard) {
+                    if (data.is_completed) {
+                        taskCard.classList.add('completed');
+                        console.log('Added completed class');
+                    } else {
+                        taskCard.classList.remove('completed');
+                        console.log('Removed completed class');
+                    }
+                    
+                    // Обновляем или удаляем бейдж "Выполнено"
+                    let badge = taskCard.querySelector('.badge.bg-success');
+                    if (data.is_completed && !badge) {
+                        const timeCol = taskCard.querySelector('.col-md-3');
+                        const newBadge = document.createElement('span');
+                        newBadge.className = 'badge bg-success';
+                        newBadge.innerHTML = '<i class="fas fa-check me-1"></i>Выполнено';
+                        timeCol.appendChild(newBadge);
+                        console.log('Added completed badge');
+                    } else if (!data.is_completed && badge && badge.textContent.includes('Выполнено')) {
+                        badge.remove();
+                        console.log('Removed completed badge');
+                    }
+                }
+                
+                // Обновляем статистику
+                loadTaskStats();
+                
+                // Показываем уведомление
+                showNotification(data.is_completed ? 'Задача выполнена! +5 очков' : 'Выполнение отменено', data.is_completed ? 'success' : 'warning');
+            } else {
+                // Возвращаем галочку в исходное состояние
+                checkbox.checked = !checkbox.checked;
+                showNotification('Ошибка: ' + data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const checkbox = document.querySelector(`.task-checkbox[data-task-id="${taskId}"]`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+            showNotification('Произошла ошибка', 'danger');
+        });
+    }
+    
+    // Функция переключения выполнения заметки
+    function toggleNoteCompletion(noteId, isCompleted) {
+        console.log('=== TOGGLE NOTE COMPLETION ===');
+        console.log('Note ID:', noteId);
+        console.log('Is completed:', isCompleted);
+        
+        const url = `/notes/${noteId}/toggle/`;
+        console.log('Request URL:', url);
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            
+            if (data.success) {
+                console.log('SUCCESS: Note completion updated');
+                
+                // Обновляем визуальное состояние заметки
+                const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+                const checkbox = document.querySelector(`.note-checkbox[data-note-id="${noteId}"]`);
+                
+                console.log('Note element found:', !!noteElement);
+                console.log('Checkbox found:', !!checkbox);
+                
+                if (noteElement) {
+                    if (data.is_completed) {
+                        noteElement.style.backgroundColor = '#d4edda';
+                        noteElement.style.textDecoration = 'line-through';
+                        noteElement.style.opacity = '0.7';
+                        console.log('Marked note as completed');
+                    } else {
+                        noteElement.style.backgroundColor = '';
+                        noteElement.style.textDecoration = '';
+                        noteElement.style.opacity = '';
+                        console.log('Marked note as incomplete');
+                    }
+                }
+                
+                // Показываем уведомление
+                showNotification(data.message, data.is_completed ? 'success' : 'warning');
+            } else {
+                console.error('ERROR: Server returned failure:', data.message);
+                // Возвращаем галочку в исходное состояние
+                const checkbox = document.querySelector(`.note-checkbox[data-note-id="${noteId}"]`);
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                showNotification('Ошибка: ' + data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('CATCH ERROR:', error);
+            console.error('Error details:', error.message);
+            
+            // Возвращаем галочку в исходное состояние
+            const checkbox = document.querySelector(`.note-checkbox[data-note-id="${noteId}"]`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                console.log('Checkbox reverted due to error');
+            }
+            showNotification('Произошла ошибка: ' + error.message, 'danger');
+        });
+    }
+    
+    // Функция загрузки статистики
+    function loadTaskStats() {
+        console.log('Loading stats...');
+        fetch('/tasks/stats/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => {
+            console.log('Stats response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Stats data:', data);
+            if (data.success) {
+                document.getElementById('totalTasks').textContent = data.total_tasks;
+                document.getElementById('completedTasks').textContent = data.completed_tasks;
+                document.getElementById('completionRate').textContent = data.completion_rate + '%';
+                document.getElementById('todayTasks').textContent = data.today_tasks;
+                document.getElementById('todayCompleted').textContent = data.today_completed + ' выполнено';
+                console.log('Stats updated successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading stats:', error);
+        });
+    }
+    
+    // Функция показа уведомлений
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Автоматическое скрытие через 3 секунды
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+    
+    // Функция получения CSRF токена
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Обработка модального окна заметок
     var noteModal = document.getElementById('noteModal');
     if (!noteModal) return;
 

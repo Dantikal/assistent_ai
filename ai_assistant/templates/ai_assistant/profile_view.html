@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+{% load math_filters %}
+
+{% block title %}Профиль {{ target_user.username }} - StudySense{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+
+    .main-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        margin: 20px auto;
+        padding: 30px;
+        max-width: 1200px;
+    }
+
+    /* Эффекты для рангов */
+    .rank-iron {
+        border: 5px solid #a0a0a0;
+        background: linear-gradient(135deg, #d3d3d3 0%, #a0a0a0 100%);
+        box-shadow: 0 0 20px rgba(160, 160, 160, 0.5);
+    }
+
+    .rank-bronze {
+        border: 5px solid #cd7f32;
+        background: linear-gradient(135deg, #e8b86f 0%, #cd7f32 100%);
+        box-shadow: 0 0 25px rgba(205, 127, 50, 0.6);
+    }
+
+    .rank-silver {
+        border: 5px solid #c0c0c0;
+        background: linear-gradient(135deg, #f0f0f0 0%, #c0c0c0 100%);
+        box-shadow: 0 0 30px rgba(192, 192, 192, 0.8);
+    }
+
+    .rank-gold {
+        border: 5px solid #ffd700;
+        background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
+        box-shadow: 0 0 35px rgba(255, 215, 0, 0.8);
+        animation: glow 2s ease-in-out infinite;
+    }
+
+    .rank-platinum {
+        border: 5px solid #e5e4e2;
+        background: linear-gradient(135deg, #f8f8f8 0%, #e5e4e2 100%);
+        box-shadow: 0 0 40px rgba(229, 228, 226, 0.9);
+    }
+
+    .rank-diamond {
+        border: 5px solid #b9f2ff;
+        background: linear-gradient(135deg, #e0f7ff 0%, #b9f2ff 100%);
+        box-shadow: 0 0 45px rgba(185, 242, 255, 1);
+    }
+
+    .rank-master {
+        border: 5px solid #ff6b6b;
+        background: linear-gradient(135deg, #ff8787 0%, #ff6b6b 100%);
+        box-shadow: 0 0 50px rgba(255, 107, 107, 1);
+    }
+
+    .rank-grandmaster {
+        border: 5px solid #ff006e;
+        background: linear-gradient(135deg, #ff3385 0%, #ff006e 100%);
+        box-shadow: 0 0 60px rgba(255, 0, 110, 1);
+        animation: rainbow 3s linear infinite;
+    }
+
+    @keyframes glow {
+        0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4); }
+        50% { box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.6); }
+        100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4); }
+    }
+
+    @keyframes rainbow {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+    }
+
+    .profile-header {
+        text-align: center;
+        margin-bottom: 40px;
+        position: relative;
+    }
+
+    .profile-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+    }
+
+    .avatar-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        transition: all 0.3s ease;
+    }
+
+    .avatar-container:hover {
+        transform: scale(1.05);
+    }
+
+    .avatar {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+    }
+
+    .points-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #667eea;
+        margin: 15px 0;
+    }
+
+    .rank-info {
+        margin: 20px 0;
+    }
+
+    .progress-bar {
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 20px;
+        margin: 10px 0;
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        transition: width 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .subject-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .subject-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .accuracy-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: bold;
+    }
+
+    .accuracy-high { background: #d4edda; color: #155724; }
+    .accuracy-medium { background: #fff3cd; color: #856404; }
+    .accuracy-low { background: #f8d7da; color: #721c24; }
+
+    .back-button {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #667eea;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .back-button:hover {
+        background: #667eea;
+        color: white;
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'leaderboard' %}" class="back-button">
+    <i class="fas fa-arrow-left"></i>
+</a>
+
+<div class="main-container">
+    <!-- Заголовок профиля -->
+    <div class="profile-header">
+        <h1 class="profile-title">Профиль {{ target_user.get_full_name|default:target_user.username }}</h1>
+        
+        <!-- Аватар с рангом -->
+        <div class="avatar-container {{ profile.get_rank_class|default:'rank-iron' }}">
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="Аватар" class="avatar">
+            {% else %}
+                <div style="font-size: 60px; color: white;">
+                    <i class="fas fa-user"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Отображение очков -->
+        <div class="points-display">
+            <i class="fas fa-star me-2"></i>{{ profile.points }}
+            <div style="font-size: 1rem; color: #666;">очков опыта</div>
+        </div>
+
+        <!-- Ранг и прогресс -->
+        <div class="rank-info">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                <h6 style="margin: 0; color: #333; font-size: 1.2rem;">
+                    {% if profile.get_rank %}
+                        {{ profile.get_rank.emoji }} {{ profile.get_rank.name }}
+                    {% else %}
+                        <i class="fas fa-user-graduate me-2"></i>Без ранга
+                    {% endif %}
+                </h6>
+                {% if profile.get_next_rank %}
+                    <span style="font-size: 14px; color: #666;">
+                        Следующий: {{ profile.get_next_rank.emoji }} {{ profile.get_next_rank.name }}
+                    </span>
+                {% endif %}
+            </div>
+            
+            {% if profile.get_next_rank %}
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ profile.get_progress_percentage }}%"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                    <span>{{ profile.points }} очков</span>
+                    <span>{{ profile.get_progress_percentage }}%</span>
+                    <span>{{ profile.get_next_rank.min_points }} очков</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Статистика -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div style="font-size: 2rem; font-weight: bold; color: #28a745;">
+                        {{ profile.correct_answers }}
+                    </div>
+                    <div style="color: #666;">Правильных ответов</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div style="font-size: 2rem; font-weight: bold; color: #dc3545;">
+                        {{ profile.wrong_answers }}
+                    </div>
+                    <div style="color: #666;">Неправильных ответов</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div style="font-size: 2rem; font-weight: bold; color: #667eea;">
+                        {{ accuracy }}%
+                    </div>
+                    <div style="color: #666;">Точность</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Предметы и очки -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-book me-2"></i>Прогресс по предметам
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if subject_scores %}
+                {% for score in subject_scores %}
+                    {% with total_answers=score.correct_answers|add:score.wrong_answers %}
+                    {% with percentage=score.correct_answers|percentage:total_answers %}
+                    <div class="subject-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ score.subject.name }}</h6>
+                                <small class="text-muted">{{ score.subject.teacher.get_full_name }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">
+                                    {{ score.points }}
+                                </div>
+                                <small class="text-muted">очков</small>
+                            </div>
+                        </div>
+                        
+                        {% if total_answers > 0 %}
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small>Точность: {{ percentage }}%</small>
+                                <span class="accuracy-badge 
+                                    {% if percentage >= 80 %}accuracy-high
+                                    {% elif percentage >= 60 %}accuracy-medium
+                                    {% else %}accuracy-low
+                                    {% endif %}">
+                                    {{ score.correct_answers }}/{{ total_answers }}
+                                </span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ percentage }}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endwith %}
+                    {% endwith %}
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Пользователь еще не имеет прогресса по предметам</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Кнопки действий -->
+    {% if not is_own_profile %}
+    <div class="text-center mt-4">
+        <a href="{% url 'posts_feed' %}" class="btn btn-primary btn-lg me-3">
+            <i class="fas fa-newspaper me-2"></i>Смотреть посты
+        </a>
+        <a href="{% url 'ai_chat' %}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-comment me-2"></i>Написать сообщение
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

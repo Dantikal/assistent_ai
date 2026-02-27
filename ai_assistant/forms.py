@@ -1,7 +1,7 @@
 from django import forms
 from django.utils import timezone
 from django.contrib.auth.models import User
-from .models import UserProfile, StudentNote, PointsAdjustment
+from .models import UserProfile, StudentNote, PointsAdjustment, Post
 from schedule.models import Subject
 
 
@@ -140,3 +140,35 @@ class PointsAdjustmentForm(forms.ModelForm):
                 UserProfile.objects.create(user=user, points=0)
         
         return points_change
+
+
+class PostForm(forms.ModelForm):
+    """Форма для создания поста"""
+    
+    poll_options = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Каждый вариант с новой строки',
+            'class': 'form-control'
+        }),
+        required=False,
+        help_text='Для опросов: каждый вариант ответа с новой строки'
+    )
+    
+    class Meta:
+        model = Post
+        fields = ['content', 'image', 'post_type']
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Что у вас нового?',
+                'class': 'form-control'
+            }),
+            'post_type': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'image': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            })
+        }

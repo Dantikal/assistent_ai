@@ -5,17 +5,18 @@
 {% block content %}
 <div class="row">
     <div class="col-md-8">
-        <h1>Добро пожаловать, {{ student.user.get_full_name }}!</h1>
-        <p class="text-muted">Группа: {{ student.group }}</p>
+        <h1>Добро пожаловать, {{ student.user.get_full_name|default:student.user.username }}!</h1>
     </div>
     <div class="col-md-4 text-end">
-        {% if student.telegram_chat_id %}
+        <!-- Отображение очков -->
+        <div class="mb-2">
+            <span class="badge bg-primary fs-6">
+                <i class="fas fa-star me-1"></i>{{ user_profile.points }} очков
+            </span>
+        </div>
+        {% if user.userprofile.telegram_connected %}
             <span class="badge bg-success">
                 <i class="fas fa-telegram me-1"></i>Telegram подключен
-            </span>
-        {% else %}
-            <span class="badge bg-warning">
-                <i class="fas fa-telegram me-1"></i>Telegram не подключен
             </span>
         {% endif %}
     </div>

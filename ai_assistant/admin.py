@@ -179,12 +179,13 @@ class KnowledgeCardAdmin(admin.ModelAdmin):
 @admin.register(AIConversation)
 class AIConversationAdmin(admin.ModelAdmin):
     list_display = ['user', 'short_question', 'created_at']
-    search_fields = ['user__username', 'question']
+    search_fields = ['user__username', 'student_question']  # Исправлено на student_question
     readonly_fields = ['created_at']
 
     def short_question(self, obj):
-        return obj.question[:50] + '...' if len(obj.question) > 50 else obj.question
-
+        # Исправлено с question на student_question
+        return obj.student_question[:50] + '...' if len(obj.student_question) > 50 else obj.student_question
+    short_question.short_description = 'Вопрос'  # Добавим понятное название для колонки
 
 @admin.register(StudyProgress)
 class StudyProgressAdmin(admin.ModelAdmin):

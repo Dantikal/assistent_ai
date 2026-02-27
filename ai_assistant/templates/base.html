@@ -48,6 +48,7 @@
             font-size: 1.5rem;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             transition: all 0.3s ease;
@@ -278,6 +279,7 @@
         /* Специальные эффекты */
         .gradient-text {
             background: var(--primary-gradient);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 700;
@@ -490,7 +492,7 @@
             height: 50px;
             background: var(--primary-gradient);
             border-radius: 50%;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             color: white;
@@ -498,7 +500,7 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
             transition: all 0.3s ease;
-            z-index: 2000; /* Повышаем z-index */
+            z-index: 9999 !important;
             border: none;
         }
 
@@ -611,6 +613,10 @@
             <i class="fas fa-calendar"></i>
             <span>Расписание</span>
         </a>
+        <a href="{% url 'posts_feed' %}" class="main-nav-item">
+            <i class="fas fa-newspaper"></i>
+            <span>Посты</span>
+        </a>
         <a href="{% url 'knowledge_cards' %}" class="main-nav-item">
             <i class="fas fa-book"></i>
             <span>Карточки знаний</span>
@@ -618,10 +624,6 @@
         <a href="{% url 'ai_chat' %}" class="main-nav-item">
             <i class="fas fa-robot"></i>
             <span>AI-ассистент</span>
-        </a>
-        <a href="{% url 'chess_home' %}" class="main-nav-item">
-            <i class="fas fa-chess"></i>
-            <span>Шахматы</span>
         </a>
         <a href="{% url 'games' %}" class="main-nav-item">
             <i class="fas fa-gamepad"></i>
@@ -671,6 +673,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'posts_feed' %}">
+                            <i class="fas fa-newspaper me-1"></i>Посты
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'knowledge_cards' %}">
                             <i class="fas fa-book me-1"></i>Карточки знаний
                         </a>
@@ -678,11 +685,6 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'ai_chat' %}">
                             <i class="fas fa-robot me-1"></i>AI-ассистент
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'chess_home' %}">
-                            <i class="fas fa-chess me-1"></i>Шахматы
                         </a>
                     </li>
                     <li class="nav-item">
@@ -744,13 +746,13 @@
         <div class="container position-relative">
             <p class="mb-0">
                 <i class="fas fa-heart text-danger me-2"></i>
-                &copy; 2024 StudySense. Сделано с любовью к образованию
+                &copy; 2026 StudySense. Сделано с любовью к образованию
                 <i class="fas fa-heart text-danger ms-2"></i>
             </p>
             <p class="mb-0 mt-2 small opacity-75">
                 <i class="fas fa-code-branch me-1"></i> v2.0 
                 <i class="fas fa-circle mx-2" style="font-size: 4px;"></i>
-                <i class="fas fa-rocket me-1"></i> Ваш умный помощник в учебе
+                Ваш умный помощник в учебе 2026
             </p>
         </div>
     </footer>
@@ -772,6 +774,10 @@
             <i class="fas fa-calendar"></i>
             <span>Расписание</span>
         </a>
+        <a href="{% url 'posts_feed' %}" class="quick-access-item">
+            <i class="fas fa-newspaper"></i>
+            <span>Посты</span>
+        </a>
         <a href="{% url 'knowledge_cards' %}" class="quick-access-item">
             <i class="fas fa-book"></i>
             <span>Карточки знаний</span>
@@ -779,10 +785,6 @@
         <a href="{% url 'ai_chat' %}" class="quick-access-item">
             <i class="fas fa-robot"></i>
             <span>AI-ассистент</span>
-        </a>
-        <a href="{% url 'chess_home' %}" class="quick-access-item">
-            <i class="fas fa-chess"></i>
-            <span>Шахматы</span>
         </a>
         <a href="{% url 'games' %}" class="quick-access-item">
             <i class="fas fa-gamepad"></i>

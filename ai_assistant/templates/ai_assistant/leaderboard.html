@@ -408,7 +408,12 @@
                     
                     <div class="leader-details">
                         <div class="leader-name">
-                            {{ leader.profile.user.username }}
+                            <a href="{% url 'profile_view' leader.profile.user.username %}" 
+                               style="text-decoration: none; color: inherit; transition: color 0.2s ease;"
+                               onmouseover="this.style.color='#667eea'" 
+                               onmouseout="this.style.color='inherit'">
+                                {{ leader.profile.user.username }}
+                            </a>
                             
                             <!-- Значок ранга -->
                             {% if leader.rank %}
@@ -444,16 +449,16 @@
                     
                     <div class="stat-box">
                         <div class="stat-value">
-                            <i class="fas fa-check me-1"></i>{{ leader.correct_answers|default:0 }}
+                            <i class="fas fa-chess me-1"></i>{{ leader.chess_points|default:0 }}
                         </div>
-                        <div class="stat-label">Правильных</div>
+                        <div class="stat-label">Шахматы</div>
                     </div>
                     
                     <div class="stat-box">
                         <div class="stat-value">
-                            <i class="fas fa-times me-1"></i>{{ leader.wrong_answers|default:0 }}
+                            <i class="fas fa-trophy me-1"></i>{{ leader.chess_wins|default:0 }}
                         </div>
-                        <div class="stat-label">Неправильных</div>
+                        <div class="stat-label">Победы</div>
                     </div>
                     
                     <div class="stat-box">
@@ -484,10 +489,20 @@
                 🥈 <strong>Platinum:</strong> 10,000 - 25,000 очков | 
                 💎 <strong>Diamond:</strong> 25,000 - 50,000 очков
             </p>
-            <p class="mb-0">
+            <p class="mb-2">
                 🎓 <strong>Master:</strong> 50,000 - 100,000 очков | 
                 👑 <strong>Grandmaster:</strong> 100,000+ очков
             </p>
+            <p class="mb-0">
+                <i class="fas fa-chess me-1"></i> <strong>Шахматные очки:</strong> Победы добавляют очки к общему рейтингу!
+            </p>
+        </div>
+        
+        <!-- Быстрые ссылки -->
+        <div class="mt-4">
+            <a href="{% url 'games' %}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-gamepad me-2"></i>Другие игры
+            </a>
         </div>
     </div>
 </div>

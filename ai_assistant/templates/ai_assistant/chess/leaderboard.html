@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">
+                    <i class="fas fa-chess me-2"></i>{{ title }}
+                </h1>
+                <div>
+                    <a href="{% url 'chess_home' %}" class="btn btn-primary">
+                        <i class="fas fa-play me-2"></i>Играть в шахматы
+                    </a>
+                    <a href="{% url 'leaderboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-trophy me-2"></i>Общий рейтинг
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика текущего пользователя -->
+    {% if user_stats %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="card-title mb-3">
+                                <i class="fas fa-user me-2"></i>Ваша статистика
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="h4 text-primary mb-1">{{ user_stats.chess_points|default:0 }}</div>
+                                        <div class="small text-muted">Очки</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="h4 text-success mb-1">{{ user_stats.wins|default:0 }}</div>
+                                        <div class="small text-muted">Победы</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="h4 text-warning mb-1">{{ user_stats.games_played|default:0 }}</div>
+                                        <div class="small text-muted">Игры</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="text-center">
+                                        <div class="h4 text-info mb-1">
+                                            {% if user_stats.games_played > 0 %}
+                                                {% widthratio user_stats.wins user_stats.games_played 100 %}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted">Win rate</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            {% if user_position %}
+                                <div class="display-4 text-primary mb-2">#{{ user_position }}</div>
+                                <div class="text-muted">Ваше место в рейтинге</div>
+                            {% else %}
+                                <div class="display-4 text-muted mb-2">-</div>
+                                <div class="text-muted">Нет в рейтинге</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Таблица лидеров -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if chess_players %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="60">#</th>
+                                        <th>Игрок</th>
+                                        <th class="text-center">Очки</th>
+                                        <th class="text-center">Победы</th>
+                                        <th class="text-center">Игры</th>
+                                        <th class="text-center">Win rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for player in chess_players %}
+                                        <tr class="{% if user_position and player.place == user_position %}table-primary{% endif %}">
+                                            <td>
+                                                {% if player.place == 1 %}
+                                                    <i class="fas fa-trophy text-warning"></i>
+                                                {% elif player.place == 2 %}
+                                                    <i class="fas fa-medal text-secondary"></i>
+                                                {% elif player.place == 3 %}
+                                                    <i class="fas fa-medal text-danger"></i>
+                                                {% else %}
+                                                    {{ player.place }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-2">
+                                                        {% if player.user.userprofile.avatar %}
+                                                            <img src="{{ player.user.userprofile.avatar.url }}" 
+                                                                 alt="avatar" 
+                                                                 class="rounded-circle" 
+                                                                 width="32" 
+                                                                 height="32">
+                                                        {% else %}
+                                                            <i class="fas fa-user-circle fa-2x text-muted"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold">{{ player.user.username }}</div>
+                                                        <div class="small text-muted">{{ player.user.userprofile.get_rank_display }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary fs-6">{{ player.chess_points|default:0 }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success">{{ player.wins|default:0 }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info">{{ player.games_played|default:0 }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if player.games_played > 0 %}
+                                                    <span class="badge bg-warning">
+                                                        {% widthratio player.wins player.games_played 100 %}%
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">0%</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-chess fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Пока нет игроков в рейтинге</h5>
+                            <p class="text-muted">Станьте первым, кто сыграет в шахматы!</p>
+                            <a href="{% url 'chess_home' %}" class="btn btn-primary">
+                                <i class="fas fa-play me-2"></i>Начать игру
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Информация о системе очков -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>Как начисляются очки
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <div class="h5 text-success">+50 очков</div>
+                                <div class="small">Победа над сложным ботом</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <div class="h5 text-warning">+25 очков</div>
+                                <div class="small">Победа над нормальным ботом</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <div class="h5 text-primary">+10 очков</div>
+                                <div class="small">Победа над легким ботом</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

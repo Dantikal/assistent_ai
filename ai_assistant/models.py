@@ -1,9 +1,69 @@
 from django.db import models
 from django.contrib.auth.models import User
-from schedule.models import Subject
+from schedule.models import Subject, PersonalScheduleItem
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+
+
+class TaskCompletion(models.Model):
+    """Отслеживание выполнения задач в расписании"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    schedule_item = models.ForeignKey(PersonalScheduleItem, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Персональная задача")
+    class_schedule = models.ForeignKey('schedule.ClassSchedule', on_delete=models.CASCADE, null=True, blank=True, verbose_name="Занятие из расписания")
+    is_completed = models.BooleanField(default=False, verbose_name="Выполнено")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Время выполнения")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Выполнение задачи"
+        verbose_name_plural = "Выполнения задач"
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'schedule_item'], name='unique_user_schedule_item'),
+            models.UniqueConstraint(fields=['user', 'class_schedule'], name='unique_user_class_schedule'),
+        ]
+    
+    def __str__(self):
+        if self.schedule_item:
+            return f"{self.user.username} - {self.schedule_item.title}: {'✓' if self.is_completed else '○'}"
+        elif self.class_schedule:
+            return f"{self.user.username} - {self.class_schedule.subject.name}: {'✓' if self.is_completed else '○'}"
+        return f"{self.user.username} - Неизвестная задача: {'✓' if self.is_completed else '○'}"
+    
+    def save(self, *args, **kwargs):
+        if self.is_completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        elif not self.is_completed:
+            self.completed_at = None
+        super().save(*args, **kwargs)
+
+
+class NoteCompletion(models.Model):
+    """Отслеживание выполнения заметок в расписании"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    schedule_note = models.ForeignKey('schedule.ScheduleNote', on_delete=models.CASCADE, verbose_name="Заметка")
+    is_completed = models.BooleanField(default=False, verbose_name="Выполнено")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Время выполнения")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Выполнение заметки"
+        verbose_name_plural = "Выполнения заметок"
+        unique_together = ['user', 'schedule_note']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.schedule_note.title}: {'✓' if self.is_completed else '○'}"
+    
+    def save(self, *args, **kwargs):
+        if self.is_completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        elif not self.is_completed:
+            self.completed_at = None
+        super().save(*args, **kwargs)
 
 
 class PointsAdjustment(models.Model):
@@ -70,10 +130,13 @@ class StudentNote(models.Model):
     # Даты
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
+    
+    # Статус выполнения
+    is_completed = models.BooleanField(default=False, verbose_name="Выполнено")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Время выполнения")
     deadline = models.DateTimeField(null=True, blank=True, verbose_name="Срок выполнения")
     
-    # Статусы
-    is_completed = models.BooleanField(default=False, verbose_name="Выполнено")
+    # Дополнительные статусы
     is_pinned = models.BooleanField(default=False, verbose_name="Закреплено")
     
     # Связь с предметом (опционально)
@@ -100,6 +163,13 @@ class StudentNote(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.user.username}"
+    
+    def save(self, *args, **kwargs):
+        if self.is_completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        elif not self.is_completed:
+            self.completed_at = None
+        super().save(*args, **kwargs)
     
     def get_tags_list(self):
         """Возвращает список тегов"""
@@ -620,3 +690,106 @@ class ChessStats(models.Model):
         
         self.chess_points += game.points_earned
         self.save()
+        
+        # Обновляем очки по предмету "Шахматы" в общей системе
+        try:
+            from .views import update_subject_score
+            profile = UserProfile.objects.get(user=self.user)
+            update_subject_score(profile, 'Шахматы', game.points_earned, 1 if game.result != 'draw' else 0, 0)
+        except:
+            pass
+
+
+class Post(models.Model):
+    """Посты пользователей"""
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
+    content = models.TextField(verbose_name="Текст поста")
+    image = models.ImageField(upload_to='posts/', blank=True, null=True, verbose_name="Изображение")
+    post_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('text', 'Текст'),
+            ('image', 'Изображение'),
+            ('poll', 'Опрос'),
+        ],
+        default='text',
+        verbose_name="Тип поста"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+    
+    class Meta:
+        verbose_name = "Пост"
+        verbose_name_plural = "Посты"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Пост от {self.author.username} ({self.created_at.strftime('%d.%m.%Y %H:%M')})"
+    
+    def get_likes_count(self):
+        return self.likes.count()
+    
+    def get_comments_count(self):
+        return self.comments.count()
+    
+    def is_liked_by(self, user):
+        if not user.is_authenticated:
+            return False
+        return self.likes.filter(user=user).exists()
+
+
+class PollOption(models.Model):
+    """Варианты ответа для опросов"""
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='poll_options')
+    text = models.CharField(max_length=200, verbose_name="Текст варианта")
+    votes_count = models.IntegerField(default=0, verbose_name="Количество голосов")
+    
+    class Meta:
+        verbose_name = "Вариант опроса"
+        verbose_name_plural = "Варианты опроса"
+    
+    def __str__(self):
+        return f"{self.text} ({self.votes_count} голосов)"
+
+
+class PollVote(models.Model):
+    """Голоса в опросах"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    option = models.ForeignKey(PollOption, on_delete=models.CASCADE)
+    voted_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['user', 'option']
+        verbose_name = "Голос в опросе"
+        verbose_name_plural = "Голоса в опросах"
+
+
+class PostLike(models.Model):
+    """Лайки постов"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['user', 'post']
+        verbose_name = "Лайк поста"
+        verbose_name_plural = "Лайки постов"
+
+
+class Comment(models.Model):
+    """Комментарии к постам"""
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField(verbose_name="Текст комментария")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+    
+    class Meta:
+        verbose_name = "Комментарий"
+        verbose_name_plural = "Комментарии"
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Комментарий от {self.author.username} к посту {self.post.id}"

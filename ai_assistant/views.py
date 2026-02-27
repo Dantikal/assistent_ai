@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db import models
-from .models import KnowledgeCard, AIConversation, StudyProgress, SubjectScore, StudentNote
+from .models import KnowledgeCard, AIConversation, StudyProgress, SubjectScore, StudentNote, PointsAdjustment
 from .forms import QuickNoteForm
 from .auth_views import register
 from schedule.models import ClassSchedule, Subject, Student, StudentGroup
@@ -12,6 +12,7 @@ import random
 import ast
 import operator
 import re
+from .models import UserProfile
 
 
 def update_subject_score(user_profile, subject_name, points_change, correct_change=0, wrong_change=0):
@@ -42,6 +43,11 @@ def update_subject_score(user_profile, subject_name, points_change, correct_chan
 @login_required
 def dashboard(request):
     """Главная панель студента"""
+    from .models import UserProfile
+    
+    # Получаем профиль пользователя
+    user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
     try:
         student = request.user.student
     except Student.DoesNotExist:
@@ -93,6 +99,7 @@ def dashboard(request):
     
     context = {
         'student': student,
+        'user_profile': user_profile,
         'today_schedules': today_schedules,
         'next_class': next_class,
         'recent_progress': recent_progress,
@@ -246,13 +253,47 @@ def schedule_view(request):
 
     notes_by_group = {}
     if group_ids:
-        for n in ScheduleNote.objects.filter(user=request.user, class_schedule_id__in=group_ids).order_by('-created_at'):
-            notes_by_group.setdefault(n.class_schedule_id, []).append(n)
+        notes = ScheduleNote.objects.filter(user=request.user, class_schedule_id__in=group_ids).order_by('-created_at')
+        
+        for n in notes:
+            # Проверяем, выполнена ли заметка
+            from .models import NoteCompletion
+            is_completed = NoteCompletion.objects.filter(
+                user=request.user,
+                schedule_note=n,
+                is_completed=True
+            ).exists()
+            
+            # Добавляем заметку с статусом выполнения
+            note_data = {
+                'id': n.id,
+                'title': n.title,
+                'description': n.description,
+                'created_at': n.created_at,
+                'is_completed': is_completed
+            }
+            notes_by_group.setdefault(n.class_schedule_id, []).append(note_data)
 
     notes_by_personal = {}
     if personal_ids:
         for n in ScheduleNote.objects.filter(user=request.user, personal_item_id__in=personal_ids).order_by('-created_at'):
-            notes_by_personal.setdefault(n.personal_item_id, []).append(n)
+            # Проверяем, выполнена ли заметка
+            from .models import NoteCompletion
+            is_completed = NoteCompletion.objects.filter(
+                user=request.user,
+                schedule_note=n,
+                is_completed=True
+            ).exists()
+            
+            # Добавляем заметку с статусом выполнения
+            note_data = {
+                'id': n.id,
+                'title': n.title,
+                'description': n.description,
+                'created_at': n.created_at,
+                'is_completed': is_completed
+            }
+            notes_by_personal.setdefault(n.personal_item_id, []).append(note_data)
 
     for day in range(1, 8):
         group_schedules = ClassSchedule.objects.filter(
@@ -269,11 +310,26 @@ def schedule_view(request):
 
         group_rows = []
         for s in group_schedules:
-            group_rows.append({'obj': s, 'notes': notes_by_group.get(s.id, [])})
+            group_rows.append({
+                'obj': s, 
+                'notes': notes_by_group.get(s.id, [])
+            })
 
         personal_rows = []
         for it in personal_schedules:
-            personal_rows.append({'obj': it, 'notes': notes_by_personal.get(it.id, [])})
+            # Проверяем, выполнена ли задача
+            from .models import TaskCompletion
+            is_completed = TaskCompletion.objects.filter(
+                user=request.user,
+                schedule_item=it,
+                is_completed=True
+            ).exists()
+            
+            personal_rows.append({
+                'obj': it, 
+                'notes': notes_by_personal.get(it.id, []),
+                'is_completed': is_completed
+            })
 
         week_data.append({
             'day': day,
@@ -435,10 +491,476 @@ def profile(request):
 
     return render(request, 'ai_assistant/profile.html', {
         'form': form, 
-        'profile': profile,
+        'profile': profile, 
         'accuracy': accuracy,
-        'subject_scores': subject_scores
+        'subject_scores': subject_scores,
+        'saved': False
     })
+
+
+@login_required
+def profile_view(request, username):
+    """Просмотр профиля другого пользователя"""
+    from django.contrib.auth.models import User
+    from .models import UserProfile, SubjectScore
+    
+    try:
+        target_user = User.objects.select_related('profile').get(username=username)
+        
+        # Создаем профиль если отсутствует
+        target_profile, created = UserProfile.objects.get_or_create(user=target_user)
+        
+        # Вычисляем точность ответов
+        accuracy = target_profile.get_accuracy_percentage()
+        
+        # Получаем очки по предметам
+        subject_scores = SubjectScore.objects.filter(user_profile=target_profile).select_related('subject')
+        
+        context = {
+            'target_user': target_user,
+            'profile': target_profile,
+            'accuracy': accuracy,
+            'subject_scores': subject_scores,
+            'is_own_profile': request.user == target_user,
+        }
+        
+        return render(request, 'ai_assistant/profile_view.html', context)
+        
+    except User.DoesNotExist:
+        messages.error(request, 'Пользователь не найден')
+        return redirect('leaderboard')
+
+
+@login_required
+def posts_feed(request):
+    """Лента постов"""
+    from .models import Post, PostLike, Comment
+    
+    posts = Post.objects.filter(is_active=True).select_related('author', 'author__profile').prefetch_related('likes', 'comments', 'comments__author', 'comments__author__profile', 'poll_options')
+    
+    # Добавляем информацию о лайках и комментариях
+    for post in posts:
+        post.is_liked = post.is_liked_by(request.user)
+        post.likes_count = post.get_likes_count()
+        post.comments_count = post.get_comments_count()
+        # Добавляем подсчет голосов для опросов
+        if post.post_type == 'poll':
+            post.total_votes = sum(option.votes_count for option in post.poll_options.all())
+            # Добавляем проценты для каждого варианта
+            for option in post.poll_options.all():
+                if post.total_votes > 0:
+                    option.percentage = round((option.votes_count / post.total_votes) * 100, 0)
+                else:
+                    option.percentage = 0
+    
+    context = {
+        'posts': posts,
+    }
+    
+    return render(request, 'ai_assistant/posts_feed.html', context)
+
+
+@login_required
+def create_post(request):
+    """Создание поста"""
+    from .models import Post, PollOption
+    from .forms import PostForm
+    
+    print("=== DEBUG CREATE POST ===")
+    print("Method:", request.method)
+    print("POST data:", dict(request.POST))
+    print("FILES data:", dict(request.FILES))
+    
+    if request.method == 'POST':
+        form = PostForm(request.POST, request.FILES)
+        print("Form valid:", form.is_valid())
+        if not form.is_valid():
+            print("Form errors:", form.errors)
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors
+            })
+        
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+        print("Post saved:", post)
+        
+        # Если это опрос, сохраняем варианты
+        if post.post_type == 'poll':
+            # Получаем все варианты опроса из POST данных
+            poll_options = []
+            for key, value in request.POST.items():
+                if key.startswith('poll_option_') and value.strip():
+                    poll_options.append(value.strip())
+            
+            print("Poll options found:", poll_options)
+            
+            # Проверяем минимум 2 варианта
+            if len(poll_options) < 2:
+                post.delete()  # Удаляем пост, если вариантов недостаточно
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'__all__': ['Минимум 2 варианта ответа для опроса']}
+                })
+            
+            # Создаем варианты опроса
+            for option_text in poll_options:
+                PollOption.objects.create(post=post, text=option_text)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Пост успешно создан!'
+        })
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Метод не разрешен'
+    })
+
+
+@login_required
+def toggle_task_completion(request, task_id):
+    """Переключение статуса выполнения задачи"""
+    from .models import TaskCompletion, PointsAdjustment
+    from schedule.models import PersonalScheduleItem
+    
+    try:
+        schedule_item = PersonalScheduleItem.objects.get(id=task_id, user=request.user)
+        
+        # Получаем или создаем запись о выполнении
+        completion, created = TaskCompletion.objects.get_or_create(
+            user=request.user,
+            schedule_item=schedule_item,
+            defaults={'is_completed': True, 'completed_at': timezone.now()}
+        )
+        
+        if not created:
+            # Переключаем статус
+            completion.is_completed = not completion.is_completed
+            completion.save()
+        
+        # Начисляем очки за выполнение
+        if completion.is_completed and not completion.completed_at:
+            # Задача только что выполнена - начисляем очки
+            request.user.userprofile.points += 5
+            request.user.userprofile.save()
+            
+            # Записываем в историю
+            PointsAdjustment.objects.create(
+                user=request.user,
+                points_change=5,
+                reason=f"Выполнение задачи: {schedule_item.title}",
+                created_by=request.user
+            )
+            
+            message = 'Задача выполнена! +5 очков'
+        elif not completion.is_completed and completion.completed_at:
+            # Задача отмечена как невыполненная - снимаем очки
+            request.user.userprofile.points -= 5
+            request.user.userprofile.save()
+            
+            # Записываем в историю
+            PointsAdjustment.objects.create(
+                user=request.user,
+                points_change=-5,
+                reason=f"Отмена выполнения: {schedule_item.title}",
+                created_by=request.user
+            )
+            
+            message = 'Выполнение отменено'
+        else:
+            message = 'Статус обновлен'
+        
+        return JsonResponse({
+            'success': True,
+            'is_completed': completion.is_completed,
+            'completed_at': completion.completed_at.isoformat() if completion.completed_at else None,
+            'points': request.user.userprofile.points,
+            'message': message
+        })
+        
+    except PersonalScheduleItem.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Задача не найдена'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
+
+
+@login_required
+def get_task_stats(request):
+    """Получение статистики выполнения задач"""
+    from .models import TaskCompletion, NoteCompletion
+    from schedule.models import PersonalScheduleItem, ScheduleNote
+    
+    try:
+        # Общее количество задач (только персональные)
+        total_tasks = PersonalScheduleItem.objects.filter(user=request.user, is_active=True).count()
+        
+        # Выполненные персональные задачи
+        completed_tasks = TaskCompletion.objects.filter(
+            user=request.user, 
+            is_completed=True,
+            schedule_item__is_active=True
+        ).count()
+        
+        # Задачи на сегодня
+        from datetime import date
+        today_weekday = date.today().isoweekday()
+        today_tasks = PersonalScheduleItem.objects.filter(
+            user=request.user, 
+            day_of_week=today_weekday,
+            is_active=True
+        ).count()
+        
+        today_completed = TaskCompletion.objects.filter(
+            user=request.user,
+            is_completed=True,
+            schedule_item__day_of_week=today_weekday,
+            schedule_item__is_active=True
+        ).count()
+        
+        completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        
+        return JsonResponse({
+            'success': True,
+            'total_tasks': total_tasks,
+            'completed_tasks': completed_tasks,
+            'completion_rate': round(completion_rate, 1),
+            'today_tasks': today_tasks,
+            'today_completed': today_completed
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
+
+
+@login_required
+def toggle_note_completion(request, note_id):
+    """Переключение статуса выполнения заметки"""
+    from .models import NoteCompletion, PointsAdjustment
+    from schedule.models import ScheduleNote
+    
+    try:
+        note = ScheduleNote.objects.get(id=note_id, user=request.user)
+        
+        # Получаем или создаем запись о выполнении заметки
+        completion, created = NoteCompletion.objects.get_or_create(
+            user=request.user,
+            schedule_note=note,
+            defaults={'is_completed': True, 'completed_at': timezone.now()}
+        )
+        
+        if not created:
+            # Переключаем статус
+            completion.is_completed = not completion.is_completed
+            completion.save()
+        
+        # Начисляем очки за выполнение
+        if completion.is_completed and not completion.completed_at:
+            # Заметка только что выполнена - начисляем очки
+            request.user.userprofile.points += 3
+            request.user.userprofile.save()
+            
+            # Записываем в историю
+            PointsAdjustment.objects.create(
+                user=request.user,
+                points_change=3,
+                reason=f"Выполнение заметки: {note.title}",
+                created_by=request.user
+            )
+            
+            message = 'Заметка выполнена! +3 очка'
+        elif not completion.is_completed and completion.completed_at:
+            # Заметка отмечена как невыполненная - снимаем очки
+            request.user.userprofile.points -= 3
+            request.user.userprofile.save()
+            
+            # Записываем в историю
+            PointsAdjustment.objects.create(
+                user=request.user,
+                points_change=-3,
+                reason=f"Отмена выполнения заметки: {note.title}",
+                created_by=request.user
+            )
+            
+            message = 'Выполнение отменено'
+        else:
+            message = 'Статус обновлен'
+        
+        return JsonResponse({
+            'success': True,
+            'is_completed': completion.is_completed,
+            'completed_at': completion.completed_at.isoformat() if completion.completed_at else None,
+            'points': request.user.userprofile.points,
+            'message': message
+        })
+        
+    except ScheduleNote.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Заметка не найдена'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        })
+
+
+@login_required
+def like_post(request, post_id):
+    """Лайк/анлайк поста"""
+    from .models import Post, PostLike
+    
+    try:
+        post = Post.objects.get(id=post_id, is_active=True)
+        like, created = PostLike.objects.get_or_create(
+            user=request.user,
+            post=post
+        )
+        
+        if not created:
+            # Если лайк уже был, удаляем его (анлайк)
+            like.delete()
+            is_liked = False
+        else:
+            is_liked = True
+        
+        return JsonResponse({
+            'success': True,
+            'is_liked': is_liked,
+            'likes_count': post.get_likes_count()
+        })
+        
+    except Post.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Пост не найден'
+        })
+
+
+@login_required
+def add_comment(request, post_id):
+    """Добавление комментария"""
+    from .models import Post, Comment
+    
+    try:
+        post = Post.objects.get(id=post_id, is_active=True)
+        content = request.POST.get('content', '').strip()
+        
+        if not content:
+            return JsonResponse({
+                'success': False,
+                'message': 'Текст комментария не может быть пустым'
+            })
+        
+        comment = Comment.objects.create(
+            post=post,
+            author=request.user,
+            content=content
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'author': comment.author.username,
+                'content': comment.content,
+                'created_at': comment.created_at.strftime('%d.%m.%Y %H:%M')
+            },
+            'comments_count': post.get_comments_count()
+        })
+        
+    except Post.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Пост не найден'
+        })
+
+
+@login_required
+def vote_poll(request, option_id):
+    """Голосование в опросе"""
+    from .models import PollOption, PollVote
+    
+    try:
+        option = PollOption.objects.get(id=option_id)
+        
+        # Проверяем, не голосовал ли пользователь уже за этот вариант
+        existing_vote = PollVote.objects.filter(
+            user=request.user,
+            option=option
+        ).first()
+        
+        if existing_vote:
+            return JsonResponse({
+                'success': False,
+                'message': 'Вы уже голосовали за этот вариант'
+            })
+        
+        # Проверяем, не голосовал ли пользователь в этом опросе вообще
+        user_poll_vote = PollVote.objects.filter(
+            user=request.user,
+            option__post=option.post
+        ).first()
+        
+        if user_poll_vote:
+            # Перемещаем голос на новый вариант
+            old_option = user_poll_vote.option
+            old_option.votes_count -= 1
+            old_option.save()
+            
+            # Обновляем существующий голос
+            user_poll_vote.option = option
+            user_poll_vote.save()
+        else:
+            # Создаем новый голос
+            PollVote.objects.create(
+                user=request.user,
+                option=option
+            )
+        
+        option.votes_count += 1
+        option.save()
+        
+        # Получаем обновленные данные опроса
+        poll_data = []
+        total_votes = sum(opt.votes_count for opt in option.post.poll_options.all())
+        
+        for opt in option.post.poll_options.all():
+            poll_data.append({
+                'id': opt.id,
+                'text': opt.text,
+                'votes': opt.votes_count,
+                'percentage': round((opt.votes_count / total_votes * 100), 1) if total_votes > 0 else 0,
+                'is_voted': PollVote.objects.filter(user=request.user, option=opt).exists()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'poll_options': poll_data,
+            'total_votes': total_votes
+        })
+        
+    except PollOption.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Вариант ответа не найден'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Ошибка: {str(e)}'
+        })
 
 
 @login_required
@@ -1501,11 +2023,17 @@ def leaderboard(request):
             total_points = profile.points
             
             # Добавляем шахматные очки
+            chess_points = 0
+            chess_wins = 0
+            chess_games = 0
             try:
                 from .models import ChessStats
                 chess_stats = ChessStats.objects.filter(user=profile.user).first()
                 if chess_stats:
-                    total_points += chess_stats.chess_points
+                    chess_points = chess_stats.chess_points
+                    chess_wins = chess_stats.wins
+                    chess_games = chess_stats.games_played
+                    total_points += chess_points
             except:
                 pass
             
@@ -1523,7 +2051,10 @@ def leaderboard(request):
                     'correct_answers': total_correct,
                     'wrong_answers': total_wrong,
                     'accuracy': total_accuracy,
-                    'rank': profile.get_rank()
+                    'rank': profile.get_rank(),
+                    'chess_points': chess_points,
+                    'chess_wins': chess_wins,
+                    'chess_games': chess_games
                 })
         
         # Сортируем по общим очкам
@@ -1553,6 +2084,56 @@ def leaderboard(request):
     }
     
     return render(request, 'ai_assistant/leaderboard.html', context)
+
+
+def chess_stats(request):
+    """Статистика шахмат"""
+    from .models import ChessStats, ChessGame
+    
+    stats, created = ChessStats.objects.get_or_create(user=request.user)
+    
+    # Получаем последние партии
+    recent_games = ChessGame.objects.filter(user=request.user).order_by('-started_at')[:10]
+    
+    context = {
+        'stats': stats,
+        'recent_games': recent_games
+    }
+    
+    return render(request, 'ai_assistant/chess/stats.html', context)
+
+
+@login_required
+def chess_leaderboard(request):
+    """Рейтинг по шахматам"""
+    from .models import ChessStats
+    
+    # Получаем всех пользователей с шахматной статистикой
+    chess_players = ChessStats.objects.select_related('user').all().order_by('-chess_points')
+    
+    # Добавляем место в рейтинге
+    for i, player in enumerate(chess_players, 1):
+        player.place = i
+    
+    # Получаем позицию текущего пользователя
+    user_position = None
+    user_stats = None
+    if request.user.is_authenticated:
+        user_stats = ChessStats.objects.filter(user=request.user).first()
+        if user_stats:
+            for i, player in enumerate(chess_players, 1):
+                if player.user == request.user:
+                    user_position = i
+                    break
+    
+    context = {
+        'chess_players': chess_players,
+        'user_position': user_position,
+        'user_stats': user_stats,
+        'title': '🏆 Шахматный рейтинг'
+    }
+    
+    return render(request, 'ai_assistant/chess/leaderboard.html', context)
 
 
 def chess_home(request):
@@ -1778,7 +2359,7 @@ def chess_make_move(request, game_id):
             'fen': game.fen_position,
             'result': game.result,
             'bot_move': bot_move is not None if game.result == 'playing' else False,
-            'board': json.dumps(board.board)
+            'board': board.board
         })
         
     except Exception as e:

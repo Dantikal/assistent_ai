@@ -186,9 +186,17 @@
     }
 
     @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-        100% { transform: scale(1); }
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.02);
+        }
+
+        100% {
+            transform: scale(1);
+        }
     }
 
     .moves-history {
@@ -315,8 +323,13 @@
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 
     /* Адаптивность */
@@ -324,12 +337,12 @@
         .game-content {
             grid-template-columns: 1fr;
         }
-        
+
         .chess-board {
             grid-template-columns: repeat(8, 50px);
             grid-template-rows: repeat(8, 50px);
         }
-        
+
         .square {
             width: 50px;
             height: 50px;
@@ -342,22 +355,22 @@
             margin: 10px;
             padding: 20px;
         }
-        
+
         .chess-board {
             grid-template-columns: repeat(8, 40px);
             grid-template-rows: repeat(8, 40px);
         }
-        
+
         .square {
             width: 40px;
             height: 40px;
             font-size: 24px;
         }
-        
+
         .game-info {
             gap: 10px;
         }
-        
+
         .info-item {
             padding: 8px 15px;
             font-size: 0.9rem;
@@ -370,7 +383,7 @@
 <div class="game-container">
     <div class="game-header">
         <h1 class="game-title">♟️ Шахматная партия</h1>
-        
+
         <div class="game-info">
             <div class="info-item">
                 <i class="fas fa-robot me-2"></i>
@@ -383,13 +396,13 @@
             <div class="info-item">
                 <i class="fas fa-star me-2"></i>
                 {% if game.result == 'playing' %}
-                    Игра идет
+                Игра идет
                 {% elif game.result == 'draw' %}
-                    Ничья
+                Ничья
                 {% elif game.result == 'white_win' %}
-                    {% if game.user_color == 'white' %}Победа{% else %}Поражение{% endif %}
+                {% if game.user_color == 'white' %}Победа{% else %}Поражение{% endif %}
                 {% elif game.result == 'black_win' %}
-                    {% if game.user_color == 'black' %}Победа{% else %}Поражение{% endif %}
+                {% if game.user_color == 'black' %}Победа{% else %}Поражение{% endif %}
                 {% endif %}
             </div>
         </div>
@@ -405,31 +418,32 @@
         <div class="game-sidebar">
             <!-- Индикатор хода -->
             <div class="sidebar-card">
-                <div class="turn-indicator {% if is_user_turn %}user-turn{% else %}bot-turn{% endif %}" id="turnIndicator">
+                <div class="turn-indicator {% if is_user_turn %}user-turn{% else %}bot-turn{% endif %}"
+                    id="turnIndicator">
                     {% if is_user_turn %}
-                        <i class="fas fa-user me-2"></i>Ваш ход
+                    <i class="fas fa-user me-2"></i>Ваш ход
                     {% else %}
-                        <i class="fas fa-robot me-2"></i>Ход бота
+                    <i class="fas fa-robot me-2"></i>Ход бота
                     {% endif %}
                 </div>
-                
+
                 <div class="game-status status-{{ game.result }}" id="gameStatus">
                     {% if game.result == 'playing' %}
-                        <i class="fas fa-play me-2"></i>Игра идет
+                    <i class="fas fa-play me-2"></i>Игра идет
                     {% elif game.result == 'draw' %}
-                        <i class="fas fa-handshake me-2"></i>Ничья!
+                    <i class="fas fa-handshake me-2"></i>Ничья!
                     {% elif game.result == 'white_win' %}
-                        {% if game.user_color == 'white' %}
-                            <i class="fas fa-trophy me-2"></i>Победа! +{{ game.points_earned }} очков
-                        {% else %}
-                            <i class="fas fa-times me-2"></i>Поражение
-                        {% endif %}
+                    {% if game.user_color == 'white' %}
+                    <i class="fas fa-trophy me-2"></i>Победа! +{{ game.points_earned }} очков
+                    {% else %}
+                    <i class="fas fa-times me-2"></i>Поражение
+                    {% endif %}
                     {% elif game.result == 'black_win' %}
-                        {% if game.user_color == 'black' %}
-                            <i class="fas fa-trophy me-2"></i>Победа! +{{ game.points_earned }} очков
-                        {% else %}
-                            <i class="fas fa-times me-2"></i>Поражение
-                        {% endif %}
+                    {% if game.user_color == 'black' %}
+                    <i class="fas fa-trophy me-2"></i>Победа! +{{ game.points_earned }} очков
+                    {% else %}
+                    <i class="fas fa-times me-2"></i>Поражение
+                    {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -468,7 +482,8 @@
                     Подсказка
                 </h3>
                 <p style="font-size: 0.9rem; color: #666; margin: 0;">
-                    Кликните на фигуру, затем на клетку для хода. Зеленые точки показывают возможные ходы, красные рамки - возможные взятия.
+                    Кликните на фигуру, затем на клетку для хода. Зеленые точки показывают возможные ходы, красные рамки
+                    - возможные взятия.
                 </p>
             </div>
         </div>
@@ -485,236 +500,236 @@
 </div>
 
 <script>
-const PIECES = {
-    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
-};
+    const PIECES = {
+        'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+        'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+    };
 
-// Инициализация переменных
-let board = null;
-let selectedSquare = null;
-let isUserTurn = false;
-let gameResult = '';
-let userColor = '';
+    // Инициализация переменных
+    let board = null;
+    let selectedSquare = null;
+    let isUserTurn = false;
+    let gameResult = '';
+    let userColor = '';
 
-// Загрузка данных из Django
-function initializeGame() {
-    board = {{ board_json|safe }};
-    isUserTurn = {{ is_user_turn|yesno:"true,false" }};
-    gameResult = {{ game_result|safe }};
-    userColor = {{ user_color|safe }};
-}
+    // Загрузка данных из Django
+    function initializeGame() {
+        board = JSON.parse('{{ board_json|escapejs }}');
+        isUserTurn = {{ is_user_turn | yesno:"true,false" }};
+        gameResult = {{ game_result | safe }};
+        userColor = {{ user_color | safe }};
+    }
 
-function initBoard() {
-    const boardElement = document.getElementById('chessBoard');
-    boardElement.innerHTML = '';
-    
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            const square = document.createElement('div');
-            square.className = `square ${(row + col) % 2 === 0 ? 'white' : 'black'}`;
-            square.dataset.row = row;
-            square.dataset.col = col;
-            
-            // Добавляем координаты
-            if (col === 0) {
-                const rankLabel = document.createElement('span');
-                rankLabel.className = 'coordinates rank-label';
-                rankLabel.textContent = 8 - row;
-                square.appendChild(rankLabel);
+    function initBoard() {
+        const boardElement = document.getElementById('chessBoard');
+        boardElement.innerHTML = '';
+
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const square = document.createElement('div');
+                square.className = `square ${(row + col) % 2 === 0 ? 'white' : 'black'}`;
+                square.dataset.row = row;
+                square.dataset.col = col;
+
+                // Добавляем координаты
+                if (col === 0) {
+                    const rankLabel = document.createElement('span');
+                    rankLabel.className = 'coordinates rank-label';
+                    rankLabel.textContent = 8 - row;
+                    square.appendChild(rankLabel);
+                }
+                if (row === 7) {
+                    const fileLabel = document.createElement('span');
+                    fileLabel.className = 'coordinates file-label';
+                    fileLabel.textContent = String.fromCharCode(97 + col);
+                    square.appendChild(fileLabel);
+                }
+
+                const piece = board[row][col];
+                if (piece) {
+                    const pieceElement = document.createElement('span');
+                    pieceElement.className = 'piece';
+                    pieceElement.textContent = PIECES[piece] || piece;
+                    square.appendChild(pieceElement);
+                }
+
+                square.addEventListener('click', handleSquareClick);
+                boardElement.appendChild(square);
             }
-            if (row === 7) {
-                const fileLabel = document.createElement('span');
-                fileLabel.className = 'coordinates file-label';
-                fileLabel.textContent = String.fromCharCode(97 + col);
-                square.appendChild(fileLabel);
-            }
-            
-            const piece = board[row][col];
-            if (piece) {
-                const pieceElement = document.createElement('span');
-                pieceElement.className = 'piece';
-                pieceElement.textContent = PIECES[piece] || piece;
-                square.appendChild(pieceElement);
-            }
-            
-            square.addEventListener('click', handleSquareClick);
-            boardElement.appendChild(square);
         }
     }
-}
 
-function handleSquareClick(event) {
-    if (gameResult !== 'playing' || !isUserTurn) return;
-    
-    const square = event.currentTarget;
-    const row = parseInt(square.dataset.row);
-    const col = parseInt(square.dataset.col);
-    
-    console.log(`Clicked: (${row}, ${col}), Selected: ${selectedSquare ? `(${selectedSquare.row}, ${selectedSquare.col})` : 'none'}`);
-    
-    if (selectedSquare) {
-        // Проверяем, кликнули ли на ту же клетку
-        if (selectedSquare.row === row && selectedSquare.col === col) {
-            console.log('Same square clicked - deselecting');
-            // Снимаем выделение
+    function handleSquareClick(event) {
+        if (gameResult !== 'playing' || !isUserTurn) return;
+
+        const square = event.currentTarget;
+        const row = parseInt(square.dataset.row);
+        const col = parseInt(square.dataset.col);
+
+        console.log(`Clicked: (${row}, ${col}), Selected: ${selectedSquare ? `(${selectedSquare.row}, ${selectedSquare.col})` : 'none'}`);
+
+        if (selectedSquare) {
+            // Проверяем, кликнули ли на ту же клетку
+            if (selectedSquare.row === row && selectedSquare.col === col) {
+                console.log('Same square clicked - deselecting');
+                // Снимаем выделение
+                clearSelection();
+                return;
+            }
+
+            console.log(`Attempting move: (${selectedSquare.row}, ${selectedSquare.col}) -> (${row}, ${col})`);
+            // Пытаемся сделать ход
+            makeMove(selectedSquare.row, selectedSquare.col, row, col);
             clearSelection();
-            return;
-        }
-        
-        console.log(`Attempting move: (${selectedSquare.row}, ${selectedSquare.col}) -> (${row}, ${col})`);
-        // Пытаемся сделать ход
-        makeMove(selectedSquare.row, selectedSquare.col, row, col);
-        clearSelection();
-    } else {
-        // Выбираем фигуру
-        const piece = board[row][col];
-        console.log(`Piece at (${row}, ${col}): ${piece}`);
-        if (piece && isUserPiece(piece)) {
-            selectedSquare = { row, col };
-            square.classList.add('selected');
-            showPossibleMoves(row, col);
-        }
-    }
-}
-
-function isUserPiece(piece) {
-    if (userColor === 'white') {
-        return piece && piece === piece.toUpperCase();
-    } else {
-        return piece && piece === piece.toLowerCase();
-    }
-}
-
-function showPossibleMoves(fromRow, fromCol) {
-    // Здесь должна быть логика показа возможных ходов
-    // Упрощенная версия - показываем все пустые клетки
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
-            if (row === fromRow && col === fromCol) continue;
-            
-            const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
-            const targetPiece = board[row][col];
-            
-            if (!targetPiece) {
-                square.classList.add('possible-move');
-            } else if (isUserPiece(board[fromRow][fromCol]) !== isUserPiece(targetPiece)) {
-                square.classList.add('possible-capture');
+        } else {
+            // Выбираем фигуру
+            const piece = board[row][col];
+            console.log(`Piece at (${row}, ${col}): ${piece}`);
+            if (piece && isUserPiece(piece)) {
+                selectedSquare = { row, col };
+                square.classList.add('selected');
+                showPossibleMoves(row, col);
             }
         }
     }
-}
 
-function clearSelection() {
-    selectedSquare = null;
-    document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-    document.querySelectorAll('.possible-move').forEach(el => el.classList.remove('possible-move'));
-    document.querySelectorAll('.possible-capture').forEach(el => el.classList.remove('possible-capture'));
-}
+    function isUserPiece(piece) {
+        if (userColor === 'white') {
+            return piece && piece === piece.toUpperCase();
+        } else {
+            return piece && piece === piece.toLowerCase();
+        }
+    }
 
-async function makeMove(fromRow, fromCol, toRow, toCol) {
-    const fromPos = `${String.fromCharCode(97 + fromCol)}${8 - fromRow}`;
-    const toPos = `${String.fromCharCode(97 + toCol)}${8 - toRow}`;
-    
-    showLoading(true);
-    
-    try {
-        const response = await fetch(`/games/chess/make-move/{{ game.id }}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: `from=${fromPos}&to=${toPos}`
-        });
-        
-        const data = await response.json();
-        console.log('Server response:', data);
-        
-        if (data.success) {
-            // Обновляем доску
-            updateBoard(data.board);
-            
-            // Обновляем статус
-            if (data.result !== 'playing') {
-                gameResult = data.result;
-                updateGameStatus(data.result);
-                // Не перезагружаем страницу, просто показываем результат
-                isUserTurn = false;
-            } else if (data.bot_move) {
-                // Бот сделал ход, обновляем доску
-                setTimeout(() => {
-                    updateBoard(data.board);
+    function showPossibleMoves(fromRow, fromCol) {
+        // Здесь должна быть логика показа возможных ходов
+        // Упрощенная версия - показываем все пустые клетки
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                if (row === fromRow && col === fromCol) continue;
+
+                const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                const targetPiece = board[row][col];
+
+                if (!targetPiece) {
+                    square.classList.add('possible-move');
+                } else if (isUserPiece(board[fromRow][fromCol]) !== isUserPiece(targetPiece)) {
+                    square.classList.add('possible-capture');
+                }
+            }
+        }
+    }
+
+    function clearSelection() {
+        selectedSquare = null;
+        document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.possible-move').forEach(el => el.classList.remove('possible-move'));
+        document.querySelectorAll('.possible-capture').forEach(el => el.classList.remove('possible-capture'));
+    }
+
+    async function makeMove(fromRow, fromCol, toRow, toCol) {
+        const fromPos = `${String.fromCharCode(97 + fromCol)}${8 - fromRow}`;
+        const toPos = `${String.fromCharCode(97 + toCol)}${8 - toRow}`;
+
+        showLoading(true);
+
+        try {
+            const response = await fetch(`/games/chess/make-move/{{ game.id }}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: `from=${fromPos}&to=${toPos}`
+            });
+
+            const data = await response.json();
+            console.log('Server response:', data);
+
+            if (data.success) {
+                // Обновляем доску
+                updateBoard(data.board);
+
+                // Обновляем статус
+                if (data.result !== 'playing') {
+                    gameResult = data.result;
+                    updateGameStatus(data.result);
+                    // Не перезагружаем страницу, просто показываем результат
+                    isUserTurn = false;
+                } else if (data.bot_move) {
+                    // Бот сделал ход, обновляем доску
+                    setTimeout(() => {
+                        updateBoard(data.board);
+                        isUserTurn = true;
+                        updateTurnIndicator(true);
+                    }, 500);
+                } else {
                     isUserTurn = true;
                     updateTurnIndicator(true);
-                }, 500);
+                }
             } else {
-                isUserTurn = true;
-                updateTurnIndicator(true);
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
             }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Произошла ошибка при отправке хода');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function updateBoard(newBoard) {
+        console.log('Updating board with:', newBoard);
+        // Обновляем доску новыми данными
+        board = newBoard;
+        initBoard();
+    }
+
+    function updateTurnIndicator(isUser) {
+        const indicator = document.getElementById('turnIndicator');
+        if (isUser) {
+            indicator.className = 'turn-indicator user-turn';
+            indicator.innerHTML = '<i class="fas fa-user me-2"></i>Ваш ход';
         } else {
-            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            indicator.className = 'turn-indicator bot-turn';
+            indicator.innerHTML = '<i class="fas fa-robot me-2"></i>Ход бота';
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Произошла ошибка при отправке хода');
-    } finally {
-        showLoading(false);
     }
-}
 
-function updateBoard(newBoard) {
-    console.log('Updating board with:', newBoard);
-    // Обновляем доску новыми данными
-    board = newBoard;
-    initBoard();
-}
+    function updateGameStatus(result) {
+        const status = document.getElementById('gameStatus');
+        status.className = `game-status status-${result}`;
 
-function updateTurnIndicator(isUser) {
-    const indicator = document.getElementById('turnIndicator');
-    if (isUser) {
-        indicator.className = 'turn-indicator user-turn';
-        indicator.innerHTML = '<i class="fas fa-user me-2"></i>Ваш ход';
-    } else {
-        indicator.className = 'turn-indicator bot-turn';
-        indicator.innerHTML = '<i class="fas fa-robot me-2"></i>Ход бота';
+        // Обновляем текст статуса в зависимости от результата
+        // Это будет обновлено при перезагрузке страницы
     }
-}
 
-function updateGameStatus(result) {
-    const status = document.getElementById('gameStatus');
-    status.className = `game-status status-${result}`;
-    
-    // Обновляем текст статуса в зависимости от результата
-    // Это будет обновлено при перезагрузке страницы
-}
+    function showLoading(show) {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.style.display = show ? 'flex' : 'none';
+        isUserTurn = !show;
+        updateTurnIndicator(!show);
+    }
 
-function showLoading(show) {
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = show ? 'flex' : 'none';
-    isUserTurn = !show;
-    updateTurnIndicator(!show);
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-    initializeGame();
-    initBoard();
-});
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', function () {
+        initializeGame();
+        initBoard();
+    });
 </script>
 {% endblock %}

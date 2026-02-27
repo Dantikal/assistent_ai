@@ -1,0 +1,1227 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}Лента постов - StudySense{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+
+    .create-post-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px auto;
+        text-decoration: none;
+    }
+
+    .create-post-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    .create-post-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Стили для формы создания поста */
+    .create-post-section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .create-post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .create-post-header h3 {
+        margin: 0;
+        color: #333;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .post-type-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .post-type-tab {
+        padding: 8px 16px;
+        border: 2px solid #e0e0e0;
+        background: white;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: #666;
+    }
+
+    .post-type-tab.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .post-type-tab:hover:not(.active) {
+        border-color: #667eea;
+        background: #f8f9ff;
+        transform: translateY(-1px);
+    }
+
+    .poll-options-container {
+        margin-top: 15px;
+    }
+
+    .poll-option-input {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        align-items: center;
+    }
+
+    .poll-option-input input {
+        flex: 1;
+    }
+
+    .poll-option-input button {
+        padding: 8px 12px;
+        border: none;
+        background: #ff4757;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .poll-option-input button:hover {
+        background: #ff3838;
+    }
+
+    .add-poll-option-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 25px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .add-poll-option-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .add-poll-option-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Стили для ленты постов */
+    .posts-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .post-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .post-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    }
+
+    .post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .post-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        overflow: hidden;
+        border: 3px solid #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .post-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .post-avatar i {
+        color: white;
+        font-size: 20px;
+    }
+
+    .post-meta {
+        flex: 1;
+    }
+
+    .post-author {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 16px;
+    }
+
+    .post-author a {
+        text-decoration: none;
+        color: inherit;
+        transition: color 0.3s ease;
+    }
+
+    .post-author a:hover {
+        color: #667eea;
+    }
+
+    .post-time {
+        color: #999;
+        font-size: 14px;
+    }
+
+    .post-content {
+        margin-bottom: 20px;
+        line-height: 1.6;
+        color: #444;
+    }
+
+    .post-image {
+        width: 100%;
+        max-height: 400px;
+        object-fit: cover;
+        border-radius: 15px;
+        margin-top: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    /* Стили для опросов */
+    .poll-container {
+        margin-top: 20px;
+    }
+
+    .poll-option {
+        margin-bottom: 12px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .poll-option:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+    .poll-bar {
+        position: relative;
+        padding: 15px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 50px;
+    }
+
+    .poll-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 8px;
+        transition: width 0.5s ease;
+        opacity: 0.1;
+        z-index: 1;
+        width: var(--poll-width, 0%);
+    }
+
+    .poll-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .poll-text {
+        font-weight: 500;
+        color: #333;
+        flex: 1;
+    }
+
+    .poll-stats {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        font-weight: 600;
+    }
+
+    .poll-votes {
+        color: #667eea;
+        font-size: 14px;
+    }
+
+    .poll-percentage {
+        color: #764ba2;
+        font-size: 14px;
+        background: rgba(118, 75, 162, 0.1);
+        padding: 4px 8px;
+        border-radius: 12px;
+    }
+
+    .poll-total {
+        margin-top: 15px;
+        padding: 12px 20px;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 12px;
+        font-weight: 600;
+        color: #667eea;
+        display: flex;
+        align-items: center;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .poll-bar.voted {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.05);
+    }
+
+    .poll-bar.voted .poll-text {
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    /* Стили для действий с постом */
+    .post-actions {
+        display: flex;
+        gap: 15px;
+        padding-top: 20px;
+        border-top: 2px solid #f0f0f0;
+    }
+
+    .action-btn {
+        background: none;
+        border: 2px solid #e0e0e0;
+        padding: 8px 16px;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        color: #666;
+    }
+
+    .action-btn:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .action-btn.liked {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+
+    .action-btn.liked:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Стили для комментариев */
+    .comments-section {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 2px solid #f0f0f0;
+    }
+
+    .comment-form {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .comment-input {
+        flex: 1;
+        padding: 12px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 25px;
+        outline: none;
+        transition: border-color 0.3s ease;
+        font-size: 14px;
+    }
+
+    .comment-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .comment-submit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .comment-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .comment {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+    }
+
+    .comment:hover {
+        background: #f0f2f5;
+        transform: translateY(-1px);
+    }
+
+    .comment-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+        border: 2px solid #fff;
+    }
+
+    .comment-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .comment-avatar i {
+        color: white;
+        font-size: 14px;
+    }
+
+    .comment-content {
+        flex: 1;
+    }
+
+    .comment-author {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .comment-author a {
+        text-decoration: none;
+        color: inherit;
+        transition: color 0.3s ease;
+    }
+
+    .comment-author a:hover {
+        color: #667eea;
+    }
+
+    .comment-text {
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 5px;
+    }
+
+    .comment-time {
+        color: #999;
+        font-size: 12px;
+    }
+
+    /* Стили для пустого состояния */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: white;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.8;
+    }
+
+    .empty-state h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .empty-state p {
+        font-size: 16px;
+        opacity: 0.9;
+        line-height: 1.6;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .posts-container {
+            padding: 10px;
+        }
+
+        .post-card {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .post-header {
+            margin-bottom: 15px;
+        }
+
+        .post-avatar {
+            width: 40px;
+            height: 40px;
+        }
+
+        .post-actions {
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .create-post-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            margin: 15px auto;
+        }
+
+        .create-post-section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    }
+
+    /* Анимации */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .post-card {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .post-card:nth-child(1) { animation-delay: 0.1s; }
+    .post-card:nth-child(2) { animation-delay: 0.2s; }
+    .post-card:nth-child(3) { animation-delay: 0.3s; }
+    .post-card:nth-child(4) { animation-delay: 0.4s; }
+    .post-card:nth-child(5) { animation-delay: 0.5s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="posts-container">
+    <!-- Создание поста -->
+    <div class="create-post-section">
+        <div class="create-post-header">
+            <h3><i class="fas fa-edit me-2"></i>Создать пост</h3>
+        </div>
+        
+        <div id="createPostForm">
+            <form id="postForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Выбор типа поста -->
+                <div class="post-type-tabs">
+                    <button type="button" class="post-type-tab active" data-type="text">
+                        <i class="fas fa-align-left me-1"></i>Текст
+                    </button>
+                    <button type="button" class="post-type-tab" data-type="image">
+                        <i class="fas fa-image me-1"></i>Изображение
+                    </button>
+                    <button type="button" class="post-type-tab" data-type="poll">
+                        <i class="fas fa-poll me-1"></i>Опрос
+                    </button>
+                </div>
+
+                <!-- Текст поста -->
+                <div class="mb-3">
+                    <textarea name="content" class="form-control" rows="4" placeholder="Что у вас нового?" required></textarea>
+                </div>
+
+                <!-- Изображение -->
+                <div id="imageField" class="mb-3" style="display: none;">
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                </div>
+
+                <!-- Опрос -->
+                <div id="pollField" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Варианты ответа:</strong></label>
+                        <div id="pollOptionsContainer">
+                            <div class="input-group mb-2">
+                                <input type="text" name="poll_option_1" class="form-control" placeholder="Вариант 1" required>
+                                <button type="button" class="btn btn-outline-danger" onclick="removePollOption(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="input-group mb-2">
+                                <input type="text" name="poll_option_2" class="form-control" placeholder="Вариант 2" required>
+                                <button type="button" class="btn btn-outline-danger" onclick="removePollOption(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addPollOption()">
+                            <i class="fas fa-plus me-1"></i>Добавить вариант
+                        </button>
+                        <small class="text-muted d-block mt-2">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Минимум 2 варианта, максимум 10 вариантов
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Скрытое поле типа -->
+                <input type="hidden" name="post_type" value="text">
+
+                <!-- Кнопки -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill" onclick="handlePostSubmit(event)">
+                        <i class="fas fa-paper-plane me-2"></i>Опубликовать
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Лента постов -->
+    <div id="postsContainer">
+        {% if posts %}
+            {% for post in posts %}
+                <div class="post-card" data-post-id="{{ post.id }}">
+                    <!-- Заголовок поста -->
+                    <div class="post-header">
+                        <div class="post-avatar">
+                            {% if post.author.profile.avatar %}
+                                <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <div class="post-meta">
+                            <div class="post-author">
+                                <a href="{% url 'profile_view' post.author.username %}" style="text-decoration: none; color: inherit;">
+                                    {{ post.author.get_full_name|default:post.author.username }}
+                                </a>
+                            </div>
+                            <div class="post-time">{{ post.created_at|date:"d.m.Y H:i" }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Контент поста -->
+                    <div class="post-content">
+                        {{ post.content|linebreaks }}
+                        
+                        {% if post.post_type == 'image' and post.image %}
+                            <img src="{{ post.image.url }}" alt="Изображение" class="post-image">
+                        {% endif %}
+
+                        {% if post.post_type == 'poll' %}
+                            <div class="poll-container">
+                                {% for option in post.poll_options.all %}
+                                    <div class="poll-option">
+                                        <div class="poll-bar" data-option-id="{{ option.id }}" style="--poll-width: {{ option.percentage }}%;">
+                                            <div class="poll-fill"></div>
+                                            <div class="poll-content">
+                                                <div class="poll-text">{{ option.text }}</div>
+                                                <div class="poll-stats">
+                                                    <span class="poll-votes">{{ option.votes_count }}</span>
+                                                    <span class="poll-percentage">{{ option.percentage }}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                <div class="poll-total">
+                                    <i class="fas fa-chart-bar me-2"></i>
+                                    Всего голосов: {{ post.total_votes }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Действия с постом -->
+                    <div class="post-actions">
+                        <button class="action-btn {% if post.is_liked %}liked{% endif %}" 
+                                data-post-id="{{ post.id }}" data-action="like">
+                            <i class="fas fa-heart"></i>
+                            <span class="likes-count">{{ post.likes_count }}</span>
+                        </button>
+                        <button class="action-btn" data-post-id="{{ post.id }}" data-action="comments">
+                            <i class="fas fa-comment"></i>
+                            <span class="comments-count">{{ post.comments_count }}</span>
+                        </button>
+                    </div>
+
+                    <!-- Комментарии -->
+                    <div class="comments-section" id="comments-{{ post.id }}" style="display: none;">
+                        <!-- Форма комментария -->
+                        <form class="comment-form" data-post-id="{{ post.id }}">
+                            {% csrf_token %}
+                            <input type="text" class="comment-input" placeholder="Написать комментарий..." required>
+                            <button type="submit" class="comment-submit">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+
+                        <!-- Существующие комментарии -->
+                        <div id="comments-list-{{ post.id }}">
+                            {% for comment in post.comments.all %}
+                                <div class="comment">
+                                    <div class="comment-avatar">
+                                        {% if comment.author.profile.avatar %}
+                                            <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}">
+                                        {% else %}
+                                            <i class="fas fa-user"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="comment-content">
+                                        <div class="comment-author">
+                                            <a href="{% url 'profile_view' comment.author.username %}" style="text-decoration: none; color: inherit;">
+                                                {{ comment.author.get_full_name|default:comment.author.username }}
+                                            </a>
+                                        </div>
+                                        <div class="comment-text">{{ comment.content }}</div>
+                                        <div class="comment-time">{{ comment.created_at|date:"d.m.Y H:i" }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-newspaper"></i>
+                <h3>Пока нет постов</h3>
+                <p>Будьте первым, кто создаст пост!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Управление типами постов
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Загружены переключатели типов постов');
+    
+    // Проверяем наличие формы
+    const postForm = document.getElementById('postForm');
+    console.log('Форма поста найдена:', !!postForm);
+    if (postForm) {
+        console.log('Форма:', postForm);
+    }
+    
+    document.querySelectorAll('.post-type-tab').forEach(btn => {
+        btn.addEventListener('click', function() {
+            console.log('Клик на тип поста:', this.dataset.type);
+            
+            document.querySelectorAll('.post-type-tab').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const type = this.dataset.type;
+            const postTypeInput = document.querySelector('input[name="post_type"]');
+            
+            if (postTypeInput) {
+                postTypeInput.value = type;
+                console.log('Установлен тип поста:', type);
+            } else {
+                console.error('Не найден input[name="post_type"]');
+            }
+            
+            // Скрываем все поля
+            const imageField = document.getElementById('imageField');
+            const pollField = document.getElementById('pollField');
+            
+            if (imageField) imageField.style.display = 'none';
+            if (pollField) pollField.style.display = 'none';
+            
+            // Показываем нужное поле
+            if (type === 'image' && imageField) {
+                imageField.style.display = 'block';
+                console.log('Показано поле изображения');
+            } else if (type === 'poll' && pollField) {
+                pollField.style.display = 'block';
+                console.log('Показано поле опроса');
+            }
+        });
+    });
+    
+    // Управление вариантами опроса
+    let pollOptionCount = 2;
+    
+    window.addPollOption = function() {
+        console.log('Добавление варианта опроса');
+        if (pollOptionCount >= 10) {
+            alert('Максимум 10 вариантов ответа');
+            return;
+        }
+        
+        pollOptionCount++;
+        const container = document.getElementById('pollOptionsContainer');
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'input-group mb-2';
+        optionDiv.innerHTML = `
+            <input type="text" name="poll_option_${pollOptionCount}" class="form-control" placeholder="Вариант ${pollOptionCount}">
+            <button type="button" class="btn btn-outline-danger" onclick="removePollOption(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(optionDiv);
+        console.log('Добавлен вариант опроса:', pollOptionCount);
+    };
+    
+    window.removePollOption = function(button) {
+        console.log('Удаление варианта опроса');
+        const container = document.getElementById('pollOptionsContainer');
+        const options = container.querySelectorAll('.input-group');
+        
+        if (options.length <= 2) {
+            alert('Минимум 2 варианта ответа');
+            return;
+        }
+        
+        button.parentElement.remove();
+        pollOptionCount--;
+        
+        // Перенумеровываем оставшиеся варианты
+        const remainingOptions = container.querySelectorAll('.input-group');
+        remainingOptions.forEach((option, index) => {
+            const input = option.querySelector('input');
+            const newIndex = index + 1;
+            input.name = `poll_option_${newIndex}`;
+            input.placeholder = `Вариант ${newIndex}`;
+        });
+        
+        console.log('Удален вариант опроса, осталось:', remainingOptions.length);
+    };
+    
+    // Создание поста - используем уже объявленную переменную postForm
+    if (postForm) {
+        console.log('Добавляем обработчик submit на форму');
+        
+        postForm.addEventListener('submit', function(e) {
+            console.log('=== SUBMIT EVENT ===');
+            e.preventDefault();
+            
+            console.log('Отправка формы создания поста');
+            const formData = new FormData(this);
+            
+            // Отладка - выводим все данные формы
+            console.log('Данные формы:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}:`, value);
+            }
+            
+            fetch('{% url "create_post" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => {
+                console.log('Статус ответа:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Ответ сервера:', data);
+                if (data.success) {
+                    console.log('Пост успешно создан');
+                    location.reload();
+                } else {
+                    console.error('Ошибка создания поста:', data.errors);
+                    alert('Ошибка: ' + JSON.stringify(data.errors));
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка запроса:', error);
+                alert('Произошла ошибка при создании поста: ' + error.message);
+            });
+        });
+        
+        // Также проверим клик по кнопке submit
+        const submitBtn = postForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            console.log('Кнопка отправки найдена:', submitBtn);
+            
+            // Добавляем обработчик клика напрямую
+            submitBtn.addEventListener('click', function(e) {
+                console.log('=== КЛИК ПО КНОПКЕ ОПУБЛИКОВАТЬ ===');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Создаем событие submit вручную
+                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                postForm.dispatchEvent(submitEvent);
+            });
+            
+        } else {
+            console.error('Кнопка отправки не найдена');
+            
+            // Попробуем найти кнопку по тексту
+            const allButtons = document.querySelectorAll('button');
+            console.log('Все кнопки на странице:', allButtons.length);
+            allButtons.forEach((btn, index) => {
+                console.log(`Кнопка ${index}:`, btn.textContent.trim(), btn.type, btn.className);
+            });
+        }
+    } else {
+        console.error('Форма поста не найдена');
+    }
+});
+
+// Прямая функция для отправки поста (запасной вариант)
+window.handlePostSubmit = function(event) {
+    console.log('=== HANDLE POST SUBMIT ===');
+    event.preventDefault();
+    
+    const form = document.getElementById('postForm');
+    if (!form) {
+        console.error('Форма не найдена');
+        return;
+    }
+    
+    console.log('Отправка формы через handlePostSubmit');
+    const formData = new FormData(form);
+    
+    // Отладка - выводим все данные формы
+    console.log('Данные формы:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value);
+    }
+    
+    fetch('{% url "create_post" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => {
+        console.log('Статус ответа:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Ответ сервера:', data);
+        if (data.success) {
+            console.log('Пост успешно создан');
+            location.reload();
+        } else {
+            console.error('Ошибка создания поста:', data.errors);
+            alert('Ошибка: ' + JSON.stringify(data.errors));
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка запроса:', error);
+        alert('Произошла ошибка при создании поста: ' + error.message);
+    });
+};
+
+// Переключение комментариев
+function toggleComments(postId) {
+    const commentsSection = document.getElementById(`comments-${postId}`);
+    commentsSection.style.display = commentsSection.style.display === 'none' ? 'block' : 'none';
+}
+
+// Добавление комментария
+function addComment(event, postId) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const input = form.querySelector('.comment-input');
+    const content = input.value.trim();
+    
+    if (!content) return;
+    
+    const formData = new FormData();
+    formData.append('content', content);
+    formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+    
+    fetch(`{% url "add_comment" 0 %}`.replace('0', postId), {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const commentsList = document.getElementById(`comments-list-${postId}`);
+            const newComment = document.createElement('div');
+            newComment.className = 'comment';
+            
+            // Получаем аватар текущего пользователя
+            const userAvatar = '{% if request.user.profile.avatar %}{{ request.user.profile.avatar.url }}{% else %}{% endif %}';
+            const avatarHtml = userAvatar ? 
+                `<img src="${userAvatar}" alt="{{ request.user.username }}">` : 
+                '<i class="fas fa-user"></i>';
+            
+            newComment.innerHTML = `
+                <div class="comment-avatar">
+                    ${avatarHtml}
+                </div>
+                <div class="comment-content">
+                    <div class="comment-author">
+                        <a href="{% url 'profile_view' request.user.username %}" style="text-decoration: none; color: inherit;">
+                            {{ request.user.get_full_name|default:request.user.username }}
+                        </a>
+                    </div>
+                    <div class="comment-text">${data.comment.content}</div>
+                    <div class="comment-time">${data.comment.created_at}</div>
+                </div>
+            `;
+            commentsList.appendChild(newComment);
+            
+            // Обновляем счетчик комментариев
+            const post = document.querySelector(`[data-post-id="${postId}"]`);
+            const commentsCount = post.querySelector('.comments-count');
+            commentsCount.textContent = data.comments_count;
+            
+            input.value = '';
+        }
+    });
+}
+
+// Получение CSRF токена
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Event delegation для всех интерактивных элементов
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка кликов по опросам
+    document.addEventListener('click', function(e) {
+        const pollBar = e.target.closest('.poll-bar');
+        if (pollBar && pollBar.dataset.optionId) {
+            e.preventDefault();
+            const optionId = pollBar.dataset.optionId;
+            votePoll(optionId, pollBar);
+            return;
+        }
+        
+        // Обработка кликов по кнопкам действий поста
+        const actionBtn = e.target.closest('.action-btn');
+        if (actionBtn && actionBtn.dataset.postId && actionBtn.dataset.action) {
+            e.preventDefault();
+            const postId = actionBtn.dataset.postId;
+            const action = actionBtn.dataset.action;
+            
+            if (action === 'like') {
+                toggleLike(postId);
+            } else if (action === 'comments') {
+                toggleComments(postId);
+            }
+        }
+    });
+    
+    // Обработка отправки форм комментариев
+    document.addEventListener('submit', function(e) {
+        const commentForm = e.target.closest('.comment-form');
+        if (commentForm && commentForm.dataset.postId) {
+            e.preventDefault();
+            const postId = commentForm.dataset.postId;
+            addComment(e, postId);
+        }
+    });
+    
+    // Проверка CSRF токена
+    const csrftoken = getCookie('csrftoken');
+    console.log('CSRF Token:', csrftoken);
+    if (!csrftoken) {
+        console.error('CSRF токен не найден!');
+    }
+});
+
+// Голосование в опросе
+function votePoll(optionId, pollBarElement) {
+    console.log('Голосование за вариант:', optionId);
+    
+    const csrftoken = getCookie('csrftoken');
+    console.log('CSRF токен для запроса:', csrftoken);
+    
+    fetch(`{% url "vote_poll" 0 %}`.replace('0', optionId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            // Проверяем, что poll_options существует и является массивом
+            if (!data.poll_options || !Array.isArray(data.poll_options)) {
+                console.error('poll_options не является массивом:', data.poll_options);
+                alert('Ошибка: некорректные данные опроса');
+                return;
+            }
+            
+            // Находим контейнер опроса
+            const pollContainer = pollBarElement.closest('.poll-container');
+            const pollOptions = pollContainer.querySelectorAll('.poll-bar');
+            
+            pollOptions.forEach(option => {
+                const optionId = option.dataset.optionId;
+                const pollData = data.poll_options.find(opt => opt.id == optionId);
+                
+                if (pollData) {
+                    const pollVotes = option.querySelector('.poll-votes');
+                    const pollPercentage = option.querySelector('.poll-percentage');
+                    
+                    // Обновляем визуальное состояние
+                    if (pollData.is_voted) {
+                        option.classList.add('voted');
+                    } else {
+                        option.classList.remove('voted');
+                    }
+                    
+                    // Обновляем данные
+                    option.style.setProperty('--poll-width', pollData.percentage + '%');
+                    if (pollVotes) pollVotes.textContent = pollData.votes;
+                    if (pollPercentage) pollPercentage.textContent = pollData.percentage + '%';
+                }
+            });
+            
+            // Обновляем общее количество голосов
+            const totalElement = pollContainer.querySelector('.poll-total');
+            if (totalElement && data.total_votes !== undefined) {
+                totalElement.innerHTML = 
+                    `<i class="fas fa-chart-bar me-2"></i>Всего голосов: ${data.total_votes}`;
+            }
+        } else {
+            console.error('Ошибка от сервера:', data);
+            // Показываем сообщение от сервера
+            alert(data.message || 'Произошла ошибка при голосовании');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при голосовании: ' + error.message);
+    });
+}
+
+// Прокрутка к форме создания поста
+function scrollToCreatePost() {
+    const createPostSection = document.querySelector('.create-post-section');
+    if (createPostSection) {
+        createPostSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Фокус на текстовое поле
+        setTimeout(() => {
+            const textarea = createPostSection.querySelector('textarea[name="content"]');
+            if (textarea) {
+                textarea.focus();
+            }
+        }, 500);
+    }
+}
+</script>
+
+<!-- Кнопка создания поста -->
+<button class="create-post-btn" onclick="scrollToCreatePost()">
+    <i class="fas fa-plus me-2"></i>Создать пост
+</button>
+{% endblock %}
